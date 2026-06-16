@@ -1,7 +1,7 @@
 # STATE — evo-sec (Nina)   (atualizado 2026-06-16 por Claude)
 
 ## Status atual
-Plano aprovado (`MASTERPLAN.md`). **Sprint 0 + Sprint 1 (fundação) mergeadas na `main`** (PR #1 e #2): estrutura, governança DEV OS, infra, schema Prisma (SPEC-001) validado e backend foundation NestJS compilando (bootstrap, PrismaService `withTenant()` RLS camada 1, contexto de tenant, env.config, erro/envelope padrão, health). `gh` autenticado (EvotechBrazil) e permissões git liberadas. **Em andamento:** módulos auth/tenant + CRUD GTD + agenda.
+**Backend Sprint 1 COMPLETO e PROVADO na `main`** (PRs #1–5): estrutura/governança, schema (16 entidades), foundation NestJS, auth dupla (JWT + token de serviço n8n), contexto de tenant, CRUD GTD (Recados/Tarefas/Lembretes) + Agenda (disponibilidade/conflito), migração `init` + seed (tenant Tiago, 6 modelos OpenRouter, 6 configs). **Harness E2E verde** contra Postgres real (health/login/CRUD/serviço/401/agenda). `gh` autenticado, perms git liberadas. Postgres local via Docker (container `evosec-pg`). **Em andamento:** n8n (prompts + filtro de gatilho + guia) → falta dashboard + multimodal + Sprints 2/3/4.
 
 ## Em andamento (SPECs ativos)
 - SPEC-001 — Schema de dados (Prisma, multi-tenant) — `in-progress` (schema pronto+validado; falta migração/RLS SQL + seed)
