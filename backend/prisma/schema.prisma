@@ -1,0 +1,437 @@
+// evo-sec (Nina) — Schema canônico (SPEC-001)
+// Convenções: models PascalCase, colunas snake_case via @map, UUID, multi-tenant (tenantId
+// em toda tabela de dados), soft delete (deletedAt), timestamps, dinheiro em centavos (Int).
+// RLS (policies PostgreSQL por tenant) é aplicada via migração SQL — ver ADR-001.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ───────────────────────────── Enums ─────────────────────────────
+enum Prioridade {
+  BAIXA
+  NORMAL
+  ALTA
+}
+
+enum RecadoStatus {
+  PENDENTE
+  LIDO
+  RESOLVIDO
+}
+
+enum TarefaTipo {
+  PROXIMA_ACAO
+  PROJETO
+  AGUARDANDO
+  ALGUM_DIA
+}
+
+enum TarefaStatus {
+  PENDENTE
+  EM_ANDAMENTO
+  CONCLUIDO
+}
+
+enum LembreteStatus {
+  PENDENTE
+  NOTIFICADO
+  CONCLUIDO
+  CANCELADO
+}
+
+enum Recorrencia {
+  NENHUMA
+  DIARIO
+  SEMANAL
+  MENSAL
+  ANUAL
+  CUSTOM
+}
+
+enum CompromissoStatus {
+  CONFIRMADO
+  TENTATIVO
+  CANCELADO
+}
+
+enum Calendario {
+  CFA
+  EVOTECH
+  PESSOAL
+}
+
+enum ContaTipo {
+  A_PAGAR
+  A_RECEBER
+}
+
+enum ContaStatus {
+  PENDENTE
+  PAGO
+  RECEBIDO
+  ATRASADO
+}
+
+enum MetaStatus {
+  ATIVA
+  CONCLUIDA
+  PAUSADA
+}
+
+enum InvestimentoTipo {
+  TESOURO_SELIC
+  TESOURO_IPCA
+  CDB
+  POUPANCA
+  FUNDO_DI
+  LCI_LCA
+  OUTRO
+}
+
+enum NivelRisco {
+  BAIXO
+  MEDIO
+  ALTO
+}
+
+enum ModeloTarefa {
+  CLASSIFICAR
+  AGENDA
+  GTD
+  CONSULTA
+  FINANCEIRO
+  FINANCAS
+}
+
+enum MidiaTipo {
+  AUDIO
+  IMAGEM
+  DOCUMENTO
+}
+
+enum ContextoRole {
+  USER
+  ASSISTANT
+}
+
+enum UserRole {
+  OWNER
+  ADMIN
+}
+
+// ───────────────────────────── Tenant & Auth ─────────────────────────────
+model Tenant {
+  id                String   @id @default(uuid()) @db.Uuid
+  nome              String
+  timezone          String   @default("America/Sao_Paulo")
+  // Evolution / WhatsApp
+  evolutionInstance String?  @map("evolution_instance")
+  whatsappNumber    String?  @map("whatsapp_number")
+  // Gatilho (código cifrado em repouso — ver Config para detalhes operacionais)
+  gatilhoCodigoHash String?  @map("gatilho_codigo_hash")
+  gatilhoSessaoMin  Int      @default(30) @map("gatilho_sessao_min")
+  quietHoursInicio  String?  @map("quiet_hours_inicio")
+  quietHoursFim     String?  @map("quiet_hours_fim")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+  deletedAt         DateTime? @map("deleted_at")
+
+  users         User[]
+  recados       Recado[]
+  tarefas       Tarefa[]
+  lembretes     Lembrete[]
+  compromissos  Compromisso[]
+  contas        Conta[]
+  metas         MetaFinanceira[]
+  investimentos Investimento[]
+  contatosVip   ContatoVip[]
+  configs       Config[]
+  sessoes       Sessao[]
+  contextos     Contexto[]
+  modelos       Modelo[]
+  usosLlm       UsoLlm[]
+  midias        Midia[]
+
+  @@map("tenants")
+}
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  tenantId     String   @map("tenant_id") @db.Uuid
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+  email        String
+  passwordHash String   @map("password_hash")
+  nome         String
+  role         UserRole @default(OWNER)
+  totpSecret   String?  @map("totp_secret")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+
+  @@unique([tenantId, email])
+  @@index([tenantId])
+  @@map("users")
+}
+
+// ───────────────────────────── GTD ─────────────────────────────
+model Recado {
+  id         String       @id @default(uuid()) @db.Uuid
+  tenantId   String       @map("tenant_id") @db.Uuid
+  tenant     Tenant       @relation(fields: [tenantId], references: [id])
+  remetente  String?
+  conteudo   String
+  categoria  String?
+  prioridade Prioridade   @default(NORMAL)
+  status     RecadoStatus @default(PENDENTE)
+  createdAt  DateTime     @default(now()) @map("created_at")
+  updatedAt  DateTime     @updatedAt @map("updated_at")
+  deletedAt  DateTime?    @map("deleted_at")
+
+  @@index([tenantId, status])
+  @@index([tenantId, createdAt])
+  @@map("recados")
+}
+
+model Tarefa {
+  id            String       @id @default(uuid()) @db.Uuid
+  tenantId      String       @map("tenant_id") @db.Uuid
+  tenant        Tenant       @relation(fields: [tenantId], references: [id])
+  titulo        String
+  descricao     String?
+  tipo          TarefaTipo   @default(PROXIMA_ACAO)
+  aguardandoDe  String?      @map("aguardando_de")
+  dataCobranca  DateTime?    @map("data_cobranca")
+  prazo         DateTime?
+  prioridade    Prioridade   @default(NORMAL)
+  status        TarefaStatus @default(PENDENTE)
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+  deletedAt     DateTime?    @map("deleted_at")
+
+  @@index([tenantId, status])
+  @@index([tenantId, tipo])
+  @@index([tenantId, dataCobranca])
+  @@map("tarefas")
+}
+
+model Lembrete {
+  id          String         @id @default(uuid()) @db.Uuid
+  tenantId    String         @map("tenant_id") @db.Uuid
+  tenant      Tenant         @relation(fields: [tenantId], references: [id])
+  titulo      String
+  descricao   String?
+  dataHora    DateTime       @map("data_hora")
+  recorrencia Recorrencia    @default(NENHUMA)
+  notificado  Boolean        @default(false)
+  status      LembreteStatus @default(PENDENTE)
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+  deletedAt   DateTime?      @map("deleted_at")
+
+  @@index([tenantId, dataHora])
+  @@index([tenantId, status])
+  @@map("lembretes")
+}
+
+// ───────────────────────────── Agenda nativa ─────────────────────────────
+model Compromisso {
+  id                  String            @id @default(uuid()) @db.Uuid
+  tenantId            String            @map("tenant_id") @db.Uuid
+  tenant              Tenant            @relation(fields: [tenantId], references: [id])
+  titulo              String
+  descricao           String?
+  inicio              DateTime
+  fim                 DateTime?
+  diaInteiro          Boolean           @default(false) @map("dia_inteiro")
+  local               String?
+  participantes       String[]
+  calendario          Calendario        @default(PESSOAL)
+  // Recorrência: regra (rrule-like) + expansão na leitura (ADR-005)
+  regraRecorrencia    String?           @map("regra_recorrencia")
+  recorrenciaPaiId    String?           @map("recorrencia_pai_id") @db.Uuid
+  recorrenciaPai      Compromisso?      @relation("Recorrencia", fields: [recorrenciaPaiId], references: [id])
+  ocorrencias         Compromisso[]     @relation("Recorrencia")
+  lembreteAntecedMin  Int?              @map("lembrete_antecedencia_min")
+  status              CompromissoStatus @default(CONFIRMADO)
+  createdAt           DateTime          @default(now()) @map("created_at")
+  updatedAt           DateTime          @updatedAt @map("updated_at")
+  deletedAt           DateTime?         @map("deleted_at")
+
+  @@index([tenantId, inicio])
+  @@index([tenantId, calendario])
+  @@index([recorrenciaPaiId])
+  @@map("compromissos")
+}
+
+// ───────────────────────────── Financeiro (gestão pessoal) ─────────────────────────────
+model Conta {
+  id            String      @id @default(uuid()) @db.Uuid
+  tenantId      String      @map("tenant_id") @db.Uuid
+  tenant        Tenant      @relation(fields: [tenantId], references: [id])
+  tipo          ContaTipo
+  descricao     String
+  categoria     String?
+  valorCentavos Int         @map("valor_centavos") // dinheiro SEMPRE em centavos
+  vencimento    DateTime
+  recorrencia   Recorrencia @default(NENHUMA)
+  status        ContaStatus @default(PENDENTE)
+  pagoEm        DateTime?   @map("pago_em")
+  contraparte   String?
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+  deletedAt     DateTime?   @map("deleted_at")
+
+  @@index([tenantId, status])
+  @@index([tenantId, vencimento])
+  @@index([tenantId, tipo])
+  @@map("contas")
+}
+
+// ───────────────────────────── Finanças (coach / pé de meia) ─────────────────────────────
+model MetaFinanceira {
+  id                       String     @id @default(uuid()) @db.Uuid
+  tenantId                 String     @map("tenant_id") @db.Uuid
+  tenant                   Tenant     @relation(fields: [tenantId], references: [id])
+  nome                     String
+  valorAlvoCentavos        Int        @map("valor_alvo_centavos")
+  valorAtualCentavos       Int        @default(0) @map("valor_atual_centavos")
+  prazo                    DateTime?
+  aporteMensalSugeridoCent Int?       @map("aporte_mensal_sugerido_centavos")
+  alertaAtraso             Boolean    @default(true) @map("alerta_atraso")
+  status                   MetaStatus @default(ATIVA)
+  createdAt                DateTime   @default(now()) @map("created_at")
+  updatedAt                DateTime   @updatedAt @map("updated_at")
+  deletedAt                DateTime?  @map("deleted_at")
+
+  @@index([tenantId, status])
+  @@map("metas_financeiras")
+}
+
+model Investimento {
+  id                  String           @id @default(uuid()) @db.Uuid
+  tenantId            String           @map("tenant_id") @db.Uuid
+  tenant              Tenant           @relation(fields: [tenantId], references: [id])
+  tipo                InvestimentoTipo
+  instituicao         String?
+  valorAplicadoCent   Int              @map("valor_aplicado_centavos")
+  dataAplicacao       DateTime         @map("data_aplicacao")
+  rendimentoEstimado  String?          @map("rendimento_estimado")
+  liquidez            String?
+  risco               NivelRisco       @default(BAIXO)
+  observacoes         String?
+  createdAt           DateTime         @default(now()) @map("created_at")
+  updatedAt           DateTime         @updatedAt @map("updated_at")
+  deletedAt           DateTime?        @map("deleted_at")
+
+  @@index([tenantId, tipo])
+  @@map("investimentos")
+}
+
+// ───────────────────────────── Suporte ─────────────────────────────
+model ContatoVip {
+  id               String     @id @default(uuid()) @db.Uuid
+  tenantId         String     @map("tenant_id") @db.Uuid
+  tenant           Tenant     @relation(fields: [tenantId], references: [id])
+  nome             String
+  telefone         String?
+  organizacao      String?
+  prioridadePadrao Prioridade @default(ALTA) @map("prioridade_padrao")
+  observacoes      String?
+  createdAt        DateTime   @default(now()) @map("created_at")
+  updatedAt        DateTime   @updatedAt @map("updated_at")
+  deletedAt        DateTime?  @map("deleted_at")
+
+  @@index([tenantId])
+  @@map("contatos_vip")
+}
+
+model Config {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  chave     String
+  valor     String
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([tenantId, chave])
+  @@map("configs")
+}
+
+model Sessao {
+  id        String    @id @default(uuid()) @db.Uuid
+  tenantId  String    @map("tenant_id") @db.Uuid
+  tenant    Tenant    @relation(fields: [tenantId], references: [id])
+  ativa     Boolean   @default(false)
+  abertaEm  DateTime? @map("aberta_em")
+  expiraEm  DateTime? @map("expira_em")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  @@index([tenantId, ativa])
+  @@map("sessoes")
+}
+
+model Contexto {
+  id        String       @id @default(uuid()) @db.Uuid
+  tenantId  String       @map("tenant_id") @db.Uuid
+  tenant    Tenant       @relation(fields: [tenantId], references: [id])
+  sessaoId  String?      @map("sessao_id")
+  role      ContextoRole
+  conteudo  String
+  createdAt DateTime     @default(now()) @map("created_at")
+
+  @@index([tenantId, sessaoId, createdAt])
+  @@map("contextos")
+}
+
+// ───────────────────────────── LLM (config + telemetria) ─────────────────────────────
+model Modelo {
+  id             String       @id @default(uuid()) @db.Uuid
+  tenantId       String       @map("tenant_id") @db.Uuid
+  tenant         Tenant       @relation(fields: [tenantId], references: [id])
+  tarefa         ModeloTarefa
+  modeloPrimario String       @map("modelo_primario")
+  fallbacks      String[]
+  tetoTokens     Int?         @map("teto_tokens")
+  ativo          Boolean      @default(true)
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  @@unique([tenantId, tarefa])
+  @@map("modelos")
+}
+
+model UsoLlm {
+  id             String       @id @default(uuid()) @db.Uuid
+  tenantId       String       @map("tenant_id") @db.Uuid
+  tenant         Tenant       @relation(fields: [tenantId], references: [id])
+  tarefa         ModeloTarefa
+  modelo         String
+  tokensIn       Int          @map("tokens_in")
+  tokensOut      Int          @map("tokens_out")
+  custoMicroUsd  Int          @map("custo_micro_usd") // custo em microdólares (inteiro)
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  @@index([tenantId, createdAt])
+  @@map("usos_llm")
+}
+
+model Midia {
+  id          String    @id @default(uuid()) @db.Uuid
+  tenantId    String    @map("tenant_id") @db.Uuid
+  tenant      Tenant    @relation(fields: [tenantId], references: [id])
+  tipo        MidiaTipo
+  storageUrl  String    @map("storage_url")
+  transcricao String?
+  ocrTexto    String?   @map("ocr_texto")
+  acessadoEm  DateTime? @map("acessado_em") // auditoria de acesso (LGPD)
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@index([tenantId, tipo])
+  @@map("midias")
+}
