@@ -1,7 +1,7 @@
 # STATE — evo-sec (Nina)   (atualizado 2026-06-16 por Claude)
 
 ## Status atual
-Plano aprovado (`MASTERPLAN.md`). **Sprint 0 concluída** (branch `chore/sprint-0-foundation`). **Sprint 1 em andamento** (branch `feat/sprint-1-schema`): schema Prisma (SPEC-001) **validado** + **backend foundation NestJS compilando** (yarn install + prisma generate + nest build OK): bootstrap, PrismaService com `withTenant()` (RLS camada 1), contexto de tenant (AsyncLocalStorage), env.config, filtro/erro padrão, envelope `{data,meta}`, health. PRs/merge dependem do Tiago colar o snippet de permissões git em `.claude/settings.local.json`.
+Plano aprovado (`MASTERPLAN.md`). **Sprint 0 + Sprint 1 (fundação) mergeadas na `main`** (PR #1 e #2): estrutura, governança DEV OS, infra, schema Prisma (SPEC-001) validado e backend foundation NestJS compilando (bootstrap, PrismaService `withTenant()` RLS camada 1, contexto de tenant, env.config, erro/envelope padrão, health). `gh` autenticado (EvotechBrazil) e permissões git liberadas. **Em andamento:** módulos auth/tenant + CRUD GTD + agenda.
 
 ## Em andamento (SPECs ativos)
 - SPEC-001 — Schema de dados (Prisma, multi-tenant) — `in-progress` (schema pronto+validado; falta migração/RLS SQL + seed)
