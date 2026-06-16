@@ -1,14 +1,20 @@
 # STATE — evo-sec (Nina)   (atualizado 2026-06-16 por Claude)
 
 ## Status atual
-Projeto recém-iniciado. Plano aprovado (ver `MASTERPLAN.md`). **Sprint 0 (Fundação)** em andamento: repositório conectado ao remote `EvotechBrazil/evo-sec`, estrutura de pastas e artefatos DEV OS sendo criados. Ainda sem código de aplicação.
+Plano aprovado (`MASTERPLAN.md`). **Sprint 0 concluída** (branch `chore/sprint-0-foundation`). **Sprint 1 em andamento** (branch `feat/sprint-1-schema`): schema Prisma (SPEC-001) **validado** + **backend foundation NestJS compilando** (yarn install + prisma generate + nest build OK): bootstrap, PrismaService com `withTenant()` (RLS camada 1), contexto de tenant (AsyncLocalStorage), env.config, filtro/erro padrão, envelope `{data,meta}`, health. PRs/merge dependem do Tiago colar o snippet de permissões git em `.claude/settings.local.json`.
 
 ## Em andamento (SPECs ativos)
-- SPEC-001 — Schema de dados (Prisma, multi-tenant) — `draft`
+- SPEC-001 — Schema de dados (Prisma, multi-tenant) — `in-progress` (schema pronto+validado; falta migração/RLS SQL + seed)
 
 ## Próximas ações
-1. Finalizar Sprint 0: docker-compose + .env.example + .gitignore, commit/push inicial.
-2. Iniciar Sprint 1 (MVP slice) no modelo Scrum 8+3 via Workflow.
+1. Backend foundation: NestJS scaffold + PrismaModule + middleware/RLS + Auth/Tenant + CRUD GTD.
+2. Migração inicial + policies RLS (SQL) + seed do tenant Tiago.
+3. n8n: workflow principal (filtro gatilho → normalização multimodal → orquestrador → especialistas) + OpenRouter.
+4. Dashboard core (Next.js) + multimodal adapters.
+
+## Inputs pendentes do Tiago (para popular na execução)
+- Código/palavra do gatilho + número do Evolution (tenant Tiago).
+- Provider de transcrição (áudio) e visão/OCR (foto/doc).
 
 ## Bloqueios/pendências
 - Definir valor do código/palavra do gatilho e número do Evolution do Tiago (popular `Tenant`/`Config` na Sprint 0/1).
