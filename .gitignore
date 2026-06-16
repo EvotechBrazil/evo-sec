@@ -44,3 +44,6 @@ coverage/
 # Misc
 tmp/
 .cache/
+
+# Claude Code local config (permissões pessoais)
+.claude/settings.local.json
