@@ -1,0 +1,15 @@
+import type { Config } from 'tailwindcss';
+
+const config: Config = {
+  content: ['./src/**/*.{ts,tsx}'],
+  theme: {
+    extend: {
+      colors: {
+        nina: { 50: '#eef6ff', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8' },
+      },
+    },
+  },
+  plugins: [],
+};
+
+export default config;
