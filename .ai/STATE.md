@@ -1,14 +1,20 @@
 # STATE — evo-sec (Nina)   (atualizado 2026-06-16 por Claude)
 
 ## Status atual
-Projeto recém-iniciado. Plano aprovado (ver `MASTERPLAN.md`). **Sprint 0 (Fundação)** em andamento: repositório conectado ao remote `EvotechBrazil/evo-sec`, estrutura de pastas e artefatos DEV OS sendo criados. Ainda sem código de aplicação.
+Plano aprovado (`MASTERPLAN.md`). **Sprint 0 concluída** (branch `chore/sprint-0-foundation`): estrutura, governança DEV OS e infra base. **Sprint 1 iniciada**: schema Prisma (SPEC-001) escrito e **validado** (`prisma validate` OK), na branch `feat/sprint-1-schema`. PRs ainda não abertos (gh não autenticado).
 
 ## Em andamento (SPECs ativos)
-- SPEC-001 — Schema de dados (Prisma, multi-tenant) — `draft`
+- SPEC-001 — Schema de dados (Prisma, multi-tenant) — `in-progress` (schema pronto+validado; falta migração/RLS SQL + seed)
 
 ## Próximas ações
-1. Finalizar Sprint 0: docker-compose + .env.example + .gitignore, commit/push inicial.
-2. Iniciar Sprint 1 (MVP slice) no modelo Scrum 8+3 via Workflow.
+1. Backend foundation: NestJS scaffold + PrismaModule + middleware/RLS + Auth/Tenant + CRUD GTD.
+2. Migração inicial + policies RLS (SQL) + seed do tenant Tiago.
+3. n8n: workflow principal (filtro gatilho → normalização multimodal → orquestrador → especialistas) + OpenRouter.
+4. Dashboard core (Next.js) + multimodal adapters.
+
+## Inputs pendentes do Tiago (para popular na execução)
+- Código/palavra do gatilho + número do Evolution (tenant Tiago).
+- Provider de transcrição (áudio) e visão/OCR (foto/doc).
 
 ## Bloqueios/pendências
 - Definir valor do código/palavra do gatilho e número do Evolution do Tiago (popular `Tenant`/`Config` na Sprint 0/1).
