@@ -3,6 +3,9 @@ import { PrismaModule } from './prisma/prisma.module';
 import { HealthController } from './health.controller';
 import { AuthModule } from './modules/auth/auth.module';
 import { RecadosModule } from './modules/recados/recados.module';
+import { TarefasModule } from './modules/tarefas/tarefas.module';
+import { LembretesModule } from './modules/lembretes/lembretes.module';
+import { AgendaModule } from './modules/agenda/agenda.module';
 import { AuthMiddleware } from './common/auth/auth.middleware';
 
 /**
@@ -10,7 +13,14 @@ import { AuthMiddleware } from './common/auth/auth.middleware';
  * públicas (login) e o health check. Demais módulos GTD/agenda entram aqui.
  */
 @Module({
-  imports: [PrismaModule, AuthModule, RecadosModule],
+  imports: [
+    PrismaModule,
+    AuthModule,
+    RecadosModule,
+    TarefasModule,
+    LembretesModule,
+    AgendaModule,
+  ],
   controllers: [HealthController],
 })
 export class AppModule implements NestModule {
