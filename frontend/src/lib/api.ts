@@ -118,3 +118,37 @@ export async function fetchVencimentos(): Promise<Conta[]> {
 
 export const reais = (centavos: number) =>
   (centavos / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+export interface MetaEvolucao {
+  id: string;
+  nome: string;
+  valorAlvoCentavos: number;
+  valorAtualCentavos: number;
+  prazo?: string | null;
+  progressoPct: number;
+  atrasada: boolean;
+}
+
+export interface Investimento {
+  id: string;
+  tipo: string;
+  instituicao?: string | null;
+  valorAplicadoCent: number;
+  risco: string;
+}
+
+export interface Evolucao {
+  metas: MetaEvolucao[];
+  totalInvestidoCentavos: number;
+  disclaimer: string;
+}
+
+export async function fetchEvolucao(): Promise<Evolucao> {
+  const { data } = await api.get<{ data: Evolucao }>('/financas/evolucao');
+  return unwrap(data);
+}
+
+export async function fetchInvestimentos(): Promise<Investimento[]> {
+  const { data } = await api.get<{ data: Investimento[] }>('/financas/investimentos');
+  return unwrap(data);
+}

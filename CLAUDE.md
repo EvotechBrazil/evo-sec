@@ -43,7 +43,7 @@
 - `recados`, `tarefas`, `lembretes` — CRUD GTD
 - `agenda` — CRUD + `GET /agenda/disponibilidade` + `POST /agenda/:id/cancelar`
 - `financeiro/contas` — CRUD + `POST /financeiro/contas/:id/pagar` · `GET /financeiro/fluxo` · `GET /financeiro/vencimentos`
-- (Sprint 3) `financas/metas`, `financas/investimentos`, `financas/evolucao`
+- `financas/metas` (+ `POST /:id/aportar`) · `financas/investimentos` · `GET /financas/evolucao` (coach educativo, com disclaimer)
 
 ## Como rodar (dev)
 - Postgres: container Docker `evosec-pg` (5432). Backend: `cd backend && yarn start:dev` (usa `backend/.env`).
