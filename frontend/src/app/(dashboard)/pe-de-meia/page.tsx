@@ -1,76 +1,93 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import {
+  Card,
+  SectionTitle,
+  Pill,
+  Progress,
+  Loading,
+  EmptyState,
+  PageHeader,
+} from '@/components/ui';
 import { fetchEvolucao, fetchInvestimentos, reais } from '@/lib/api';
 
 export default function PeDeMeiaPage() {
   const evolucao = useQuery({ queryKey: ['evolucao'], queryFn: fetchEvolucao });
   const investimentos = useQuery({ queryKey: ['investimentos'], queryFn: fetchInvestimentos });
 
+  const carregando = evolucao.isLoading || investimentos.isLoading;
+  const metas = evolucao.data?.metas ?? [];
+  const lista = investimentos.data ?? [];
+
   return (
     <div className="pt-2">
-      <h1 className="mb-1 text-2xl font-bold">Pé de meia</h1>
-      <p className="mb-5 text-sm text-slate-500">Metas, aportes e investimentos de baixo risco.</p>
+      <PageHeader titulo="Pé de meia" sub="Metas, aportes e investimentos de baixo risco." />
 
-      <div className="mb-6 rounded-xl bg-white p-4 shadow-sm">
-        <p className="text-xs text-slate-400">Total investido</p>
-        <p className="text-2xl font-bold text-emerald-600">
-          {reais(evolucao.data?.totalInvestidoCentavos ?? 0)}
-        </p>
-      </div>
-
-      <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-400">Metas</h2>
-      <div className="mb-6 space-y-3">
-        {evolucao.data?.metas.length === 0 && (
-          <p className="text-sm text-slate-400">Nenhuma meta ainda.</p>
-        )}
-        {evolucao.data?.metas.map((m) => (
-          <div key={m.id} className="rounded-xl bg-white p-4 shadow-sm">
-            <div className="flex items-center justify-between">
-              <p className="font-medium">{m.nome}</p>
-              {m.atrasada && (
-                <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-700">
-                  atrasada
-                </span>
-              )}
-            </div>
-            <p className="text-sm text-slate-500">
-              {reais(m.valorAtualCentavos)} de {reais(m.valorAlvoCentavos)} · {m.progressoPct}%
+      {carregando ? (
+        <Loading />
+      ) : (
+        <div className="space-y-6">
+          <Card className="bg-gradient-to-br from-neutral-900 to-neutral-950">
+            <p className="text-[11px] uppercase tracking-wider text-neutral-400">Total investido</p>
+            <p className="mt-1 text-2xl font-extrabold text-emerald-400">
+              {reais(evolucao.data?.totalInvestidoCentavos ?? 0)}
             </p>
-            <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-100">
-              <div
-                className="h-full rounded-full bg-nina-500"
-                style={{ width: `${m.progressoPct}%` }}
-              />
-            </div>
-          </div>
-        ))}
-      </div>
+          </Card>
 
-      <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-400">
-        Investimentos
-      </h2>
-      <div className="space-y-2">
-        {investimentos.data?.length === 0 && (
-          <p className="text-sm text-slate-400">Nenhum investimento.</p>
-        )}
-        {investimentos.data?.map((i) => (
-          <div key={i.id} className="flex justify-between rounded-xl bg-white p-4 shadow-sm">
-            <div>
-              <p className="font-medium">{i.tipo.replace(/_/g, ' ')}</p>
-              <p className="text-sm text-slate-500">
-                {i.instituicao ?? '—'} · risco {i.risco.toLowerCase()}
-              </p>
-            </div>
-            <span className="font-semibold">{reais(i.valorAplicadoCent)}</span>
-          </div>
-        ))}
-      </div>
+          <section>
+            <SectionTitle>Metas</SectionTitle>
+            {metas.length === 0 ? (
+              <EmptyState>Nenhuma meta ainda.</EmptyState>
+            ) : (
+              <div className="space-y-3">
+                {metas.map((m) => (
+                  <Card key={m.id}>
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="font-medium text-white">{m.nome}</p>
+                      {m.atrasada ? <Pill tone="amber">atrasada</Pill> : null}
+                    </div>
+                    <p className="mt-1 text-sm text-neutral-400">
+                      {reais(m.valorAtualCentavos)} de {reais(m.valorAlvoCentavos)} · {m.progressoPct}%
+                    </p>
+                    <div className="mt-2">
+                      <Progress pct={m.progressoPct} />
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </section>
 
-      {evolucao.data?.disclaimer && (
-        <p className="mt-6 rounded-lg bg-slate-100 p-3 text-xs text-slate-500">
-          {evolucao.data.disclaimer}
-        </p>
+          <section>
+            <SectionTitle>Investimentos</SectionTitle>
+            {lista.length === 0 ? (
+              <EmptyState>Nenhum investimento.</EmptyState>
+            ) : (
+              <Card className="divide-y divide-white/5 !p-0">
+                {lista.map((i) => (
+                  <div key={i.id} className="flex items-center justify-between gap-3 p-4">
+                    <div className="min-w-0">
+                      <p className="truncate font-medium capitalize text-white">
+                        {i.tipo.replace(/_/g, ' ')}
+                      </p>
+                      <p className="truncate text-sm text-neutral-400">
+                        {i.instituicao ?? '—'} · risco {i.risco.toLowerCase()}
+                      </p>
+                    </div>
+                    <span className="shrink-0 font-bold text-white">{reais(i.valorAplicadoCent)}</span>
+                  </div>
+                ))}
+              </Card>
+            )}
+          </section>
+
+          {evolucao.data?.disclaimer ? (
+            <div className="rounded-2xl bg-white/5 p-3 text-xs text-neutral-400">
+              {evolucao.data.disclaimer}
+            </div>
+          ) : null}
+        </div>
       )}
     </div>
   );
