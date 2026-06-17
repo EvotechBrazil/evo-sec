@@ -1,7 +1,13 @@
 # STATE — evo-sec (Nina)   (atualizado 2026-06-16 por Claude)
 
 ## Status atual
-**Backend Sprint 1 COMPLETO e PROVADO na `main`** (PRs #1–5): estrutura/governança, schema (16 entidades), foundation NestJS, auth dupla (JWT + token de serviço n8n), contexto de tenant, CRUD GTD (Recados/Tarefas/Lembretes) + Agenda (disponibilidade/conflito), migração `init` + seed (tenant Tiago, 6 modelos OpenRouter, 6 configs). **Harness E2E verde** contra Postgres real (health/login/CRUD/serviço/401/agenda). `gh` autenticado, perms git liberadas. Postgres local via Docker (container `evosec-pg`). **Em andamento:** n8n (prompts + filtro de gatilho + guia) → falta dashboard + multimodal + Sprints 2/3/4.
+**Sprint 1 MVP COMPLETO na `main`** (7 PRs): (1-5) backend NestJS — auth dupla, tenant, CRUD GTD (Recados/Tarefas/Lembretes) + Agenda, migração `init` + seed, **Harness E2E verde** contra Postgres real; (6) n8n — prompts da Nina + filtro de gatilho (isolamento) + guia de setup; (7) dashboard Next.js (login + Início + Agenda + Aguardando, `next build` OK). `gh` autenticado, perms git liberadas, Docker `evosec-pg` rodando.
+
+## Próximas ações (roadmap restante)
+- Sprint 2 — Financeiro (gestão): módulo Conta (CRUD, padrão Recados) + fluxo de caixa + CRON vencimentos + tela.
+- Sprint 3 — Finanças (coach): Meta + Investimento + tela de evolução + CRON aporte/alerta.
+- Multimodal: adapters de transcrição (áudio) e visão/OCR (foto/doc) no n8n.
+- Sprint 4 — Refino: RLS no DB (camada 2), recorrência avançada da agenda, revisão semanal, premortem de produção, telas de Custo/Financeiro com recharts/Tremor.
 
 ## Em andamento (SPECs ativos)
 - SPEC-001 — Schema de dados (Prisma, multi-tenant) — `in-progress` (schema pronto+validado; falta migração/RLS SQL + seed)
