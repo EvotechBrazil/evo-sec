@@ -1,7 +1,7 @@
 # PREMORTEM — evo-sec (Nina) — Produção   (momento: pré-deploy · 2026-06-17)
 
 ## Narrativa do fracasso
-"Subimos a Nina. Nas primeiras 24h: a chave do OpenRouter não tinha crédito e toda mensagem falhou silenciosamente; o webhook do Evolution apontava para o n8n errado e a Nina não respondia; o número do gatilho no `Tenant` estava sem o DDI e o filtro derrubava tudo; e como a RLS de banco não estava forçada, um segundo tenant de teste enxergou dados do Tiago."
+"Subimos a Nina. Nas primeiras 24h: a chave do OpenRouter não tinha crédito e toda mensagem falhou silenciosamente; o webhook do Evolution apontava para o n8n errado e a Nina não respondia; o número do gatilho no `Tenant` estava sem o DDI e o filtro derrubava tudo; e como a RLS de banco não estava forçada, um segundo tenant de teste enxergou dados do Rodrigo."
 
 ## Riscos pré-deploy (P × I) e mitigação
 
@@ -19,7 +19,7 @@
 - [ ] `.env` completo (DATABASE_URL, JWT, ENCRYPTION_KEY 32, SERVICE_TOKEN, OPENROUTER_API_KEY, EVOLUTION_*)
 - [ ] OpenRouter com crédito; modelos da tabela `Modelo` válidos
 - [ ] Webhook Evolution → n8n testado (self-chat + código aciona; terceiro é ignorado)
-- [ ] `Tenant` do Tiago: número com DDI 55 + código do gatilho corretos
+- [ ] `Tenant` do Rodrigo: número com DDI 55 + código do gatilho corretos
 - [ ] Backup do banco testado; rollback de migração documentado
 - [ ] Harness verde; monitoramento/alerta ativos
 - [ ] RLS: decidir camada 2 (ADR-006) antes de habilitar 2º tenant

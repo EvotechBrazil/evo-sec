@@ -21,7 +21,7 @@ export default function FalarPage() {
 
       <div className="relative z-10 flex flex-col items-center gap-6 text-center">
         <div className="flex flex-col items-center gap-1">
-          <p className="text-lg font-semibold text-white">Boa tarde, Tiago</p>
+          <p className="text-lg font-semibold text-white">Boa tarde, Rodrigo</p>
           <span className="inline-flex items-center gap-2 text-sm text-neutral-400">
             <span className="relative flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-yellow-400 opacity-75" />

@@ -4,7 +4,7 @@
 Meta de economia de tokens com qualidade onde importa. Necessário trocar modelos sem editar workflows.
 
 ## Decisão
-Tabela `Modelo` mapeia `tarefa → modelo_primario + fallbacks[] + teto_tokens`. 3 tiers definidos pelo Tiago:
+Tabela `Modelo` mapeia `tarefa → modelo_primario + fallbacks[] + teto_tokens`. 3 tiers definidos pelo Rodrigo:
 - **Fraco:** `nvidia/nemotron-3.5-content-safety:free` — classificação de intenção, consultas simples e **camada de content-safety** (detecção de instrução embutida/jailbreak).
 - **Intermediário:** `qwen/qwen3.7-max` — agenda, GTD, financeiro.
 - **Premium:** `anthropic/claude-sonnet-4.6` — coach de finanças, ambiguidade, fallback de qualidade.

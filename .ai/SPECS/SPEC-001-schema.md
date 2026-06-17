@@ -8,13 +8,13 @@ Status: draft
 Persistir, com isolamento por tenant, tudo que a Nina captura/gerencia: recados, tarefas/GTD, agenda nativa, financeiro pessoal, coach de finanças, memória conversacional, config do gatilho e telemetria de LLM.
 
 ## Usuário afetado
-Tiago (1º tenant) e contas futuras.
+Rodrigo (1º tenant) e contas futuras.
 
 ## Problema
 Sem um schema canônico, multi-tenant e seguro, não há base para a API nem para a dashboard.
 
 ## Resultado esperado
-`schema.prisma` + migração inicial aplicada em Postgres 16, com RLS por `tenantId` e seed do tenant do Tiago.
+`schema.prisma` + migração inicial aplicada em Postgres 16, com RLS por `tenantId` e seed do tenant do Rodrigo.
 
 ## Fora de escopo
 Lógica de negócio (fica nos services), workflows n8n, telas.
@@ -26,7 +26,7 @@ Lógica de negócio (fica nos services), workflows n8n, telas.
 - [ ] Índices compostos por tenant nas tabelas de consulta frequente.
 - [ ] RLS: policies PostgreSQL por `tenantId` + middleware Prisma + teste de isolamento cross-tenant.
 - [ ] Agenda: suporte a `tstzrange`/exclusão de sobreposição (conflito) e regra de recorrência.
-- [ ] `migrate dev` roda limpo; `prisma generate` sem erro; seed do tenant Tiago.
+- [ ] `migrate dev` roda limpo; `prisma generate` sem erro; seed do tenant Rodrigo.
 
 ## Casos de borda
 - Recorrência de compromisso (expansão na leitura — ver ADR-005).

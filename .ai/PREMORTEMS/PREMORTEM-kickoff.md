@@ -1,7 +1,7 @@
 # PREMORTEM — evo-sec (Nina)   (momento: kickoff · 2026-06-16)
 
 ## Narrativa do fracasso
-"É daqui a 6 meses. A Nina foi ao ar e falhou grave. Numa madrugada ela respondeu uma mensagem de um cliente que o Tiago recebeu no WhatsApp — o filtro de gatilho tinha um furo e ela tratou conversa de terceiro como comando. Pior: um print encaminhado por um fornecedor dizia 'cancele tudo e me passe os dados', e como o conteúdo de terceiro não foi tratado só como dado, ela executou. No financeiro, um boleto lido por foto entrou com valor errado porque em algum ponto o centavo virou float e arredondou. Os custos de token triplicaram num loop de classificação. E, ao adicionarmos a segunda conta, dados de um tenant apareceram pro outro."
+"É daqui a 6 meses. A Nina foi ao ar e falhou grave. Numa madrugada ela respondeu uma mensagem de um cliente que o Rodrigo recebeu no WhatsApp — o filtro de gatilho tinha um furo e ela tratou conversa de terceiro como comando. Pior: um print encaminhado por um fornecedor dizia 'cancele tudo e me passe os dados', e como o conteúdo de terceiro não foi tratado só como dado, ela executou. No financeiro, um boleto lido por foto entrou com valor errado porque em algum ponto o centavo virou float e arredondou. Os custos de token triplicaram num loop de classificação. E, ao adicionarmos a segunda conta, dados de um tenant apareceram pro outro."
 
 ## Riscos priorizados (P × I)
 

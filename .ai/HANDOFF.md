@@ -8,7 +8,7 @@
 - Governança: `.ai/` (STATE, MASTERPLAN, SPEC-001, ADR-001..006, PREMORTEMs, HARNESS por sprint).
 
 ## O que falta (próximos passos — em ordem)
-1. ~~**Workflow n8n vivo** na instância~~ ✅ **FEITO (2026-06-17)** — `Nina — Principal (WhatsApp)`, id `Dqm3pJo2MNHcRZ1R`, na instância `https://alicia-n8n.rte6ms.easypanel.host` (projeto `ScHAXN5Y8b3AwBfN`). Fonte: `n8n/workflows/nina-main.workflow.ts`. **Inativo** — faltam 3 passos manuais do Tiago para ir ao ar:
+1. ~~**Workflow n8n vivo** na instância~~ ✅ **FEITO (2026-06-17)** — `Nina — Principal (WhatsApp)`, id `Dqm3pJo2MNHcRZ1R`, na instância `https://alicia-n8n.rte6ms.easypanel.host` (projeto `ScHAXN5Y8b3AwBfN`). Fonte: `n8n/workflows/nina-main.workflow.ts`. **Inativo** — faltam 3 passos manuais do Rodrigo para ir ao ar:
    - (a) Nó **Nina (OpenRouter)**: selecionar credencial `OpenRouter account` (id `QSfQVD2ss2XVpPRB`) no dropdown.
    - (b) Nó **Evolution sendText**: criar credencial `Evolution API (apikey)` (httpHeaderAuth header `apikey`) + trocar `EVOLUTION_HOST` pela URL real; apontar webhook do Evolution (`MESSAGES_UPSERT`) para `/webhook/nina`; **publicar**.
    - (c) Iteração seguinte: camada de tools (orquestrador+especialistas → API NestJS `/api/v1`) — exige **API_BASE público** (n8n não alcança `localhost:3001`) + nós de transcrição/visão.
