@@ -2,44 +2,74 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { fetchResumoCusto, usd } from '@/lib/api';
+import {
+  Card,
+  SectionTitle,
+  Donut,
+  Loading,
+  EmptyState,
+  PageHeader,
+  type Segmento,
+} from '@/components/ui';
+
+const CORES = ['#facc15', '#fbbf24', '#a3a3a3', '#fde68a', '#52525b'];
 
 export default function CustoPage() {
-  const { data } = useQuery({ queryKey: ['custo'], queryFn: fetchResumoCusto });
+  const { data, isLoading } = useQuery({
+    queryKey: ['custo'],
+    queryFn: fetchResumoCusto,
+  });
+
+  if (isLoading || !data) {
+    return (
+      <div className="pt-2">
+        <PageHeader titulo="Custo de IA" sub="Uso de tokens (OpenRouter) — últimos 30 dias." />
+        <Loading />
+      </div>
+    );
+  }
+
+  const total = data.porModelo.reduce((acc, m) => acc + m.custoMicroUsd, 0);
+  const segments: Segmento[] = data.porModelo.map((m, i) => ({
+    label: m.modelo.split('/').pop() ?? m.modelo,
+    pct: Math.round((m.custoMicroUsd / (total || 1)) * 100),
+    valor: usd(m.custoMicroUsd),
+    color: CORES[i % CORES.length],
+  }));
 
   return (
     <div className="pt-2">
-      <h1 className="mb-1 text-2xl font-bold">Custo de IA</h1>
-      <p className="mb-5 text-sm text-slate-500">Uso de tokens (OpenRouter) — últimos 30 dias.</p>
+      <PageHeader titulo="Custo de IA" sub="Uso de tokens (OpenRouter) — últimos 30 dias." />
 
-      <div className="mb-6 grid grid-cols-3 gap-2">
-        <div className="rounded-xl bg-white p-3 shadow-sm">
-          <p className="text-xs text-slate-400">Custo</p>
-          <p className="font-semibold">{usd(data?.custoMicroUsd ?? 0)}</p>
-        </div>
-        <div className="rounded-xl bg-white p-3 shadow-sm">
-          <p className="text-xs text-slate-400">Tokens in</p>
-          <p className="font-semibold">{(data?.tokensIn ?? 0).toLocaleString('pt-BR')}</p>
-        </div>
-        <div className="rounded-xl bg-white p-3 shadow-sm">
-          <p className="text-xs text-slate-400">Tokens out</p>
-          <p className="font-semibold">{(data?.tokensOut ?? 0).toLocaleString('pt-BR')}</p>
-        </div>
+      <div className="mb-6 grid grid-cols-3 gap-3">
+        <Card className="!p-3">
+          <p className="text-[11px] text-neutral-400">Custo</p>
+          <p className="mt-0.5 text-lg font-extrabold tracking-tight text-yellow-400">
+            {usd(data.custoMicroUsd)}
+          </p>
+        </Card>
+        <Card className="!p-3">
+          <p className="text-[11px] text-neutral-400">Tokens in</p>
+          <p className="mt-0.5 text-lg font-extrabold tracking-tight text-white">
+            {data.tokensIn.toLocaleString('pt-BR')}
+          </p>
+        </Card>
+        <Card className="!p-3">
+          <p className="text-[11px] text-neutral-400">Tokens out</p>
+          <p className="mt-0.5 text-lg font-extrabold tracking-tight text-white">
+            {data.tokensOut.toLocaleString('pt-BR')}
+          </p>
+        </Card>
       </div>
 
-      <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-400">
-        Por modelo
-      </h2>
-      <div className="space-y-2">
-        {data?.porModelo.length === 0 && (
-          <p className="text-sm text-slate-400">Sem uso registrado ainda.</p>
+      <SectionTitle>Por modelo</SectionTitle>
+      <Card>
+        {segments.length === 0 ? (
+          <EmptyState>Sem uso registrado ainda.</EmptyState>
+        ) : (
+          <Donut segments={segments} centerValue={usd(total)} centerLabel="total" />
         )}
-        {data?.porModelo.map((m) => (
-          <div key={m.modelo} className="flex justify-between rounded-xl bg-white p-4 shadow-sm">
-            <span className="text-sm">{m.modelo}</span>
-            <span className="font-semibold">{usd(m.custoMicroUsd)}</span>
-          </div>
-        ))}
-      </div>
+      </Card>
     </div>
   );
 }

@@ -50,3 +50,8 @@ tmp/
 
 # Playwright MCP artifacts
 .playwright-mcp/
+
+# Screenshots de preview/teste (raiz) e build info do TS
+/nina-*.png
+/app-*.png
+*.tsbuildinfo
