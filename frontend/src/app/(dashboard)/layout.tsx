@@ -10,6 +10,7 @@ const NAV = [
   { href: '/agenda', label: 'Agenda' },
   { href: '/aguardando', label: 'Aguardando' },
   { href: '/financeiro', label: 'Financeiro' },
+  { href: '/pe-de-meia', label: 'Pé de meia' },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {

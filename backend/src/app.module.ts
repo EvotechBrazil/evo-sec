@@ -7,6 +7,7 @@ import { TarefasModule } from './modules/tarefas/tarefas.module';
 import { LembretesModule } from './modules/lembretes/lembretes.module';
 import { AgendaModule } from './modules/agenda/agenda.module';
 import { FinanceiroModule } from './modules/financeiro/financeiro.module';
+import { FinancasModule } from './modules/financas/financas.module';
 import { AuthMiddleware } from './common/auth/auth.middleware';
 
 /**
@@ -22,6 +23,7 @@ import { AuthMiddleware } from './common/auth/auth.middleware';
     LembretesModule,
     AgendaModule,
     FinanceiroModule,
+    FinancasModule,
   ],
   controllers: [HealthController],
 })
