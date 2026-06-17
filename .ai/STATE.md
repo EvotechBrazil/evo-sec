@@ -3,18 +3,18 @@
 ## Status atual
 **TODAS as sprints (1–4) concluídas e testadas (E2E + Playwright) na `main`** (10 PRs). Backend: GTD + Agenda (com recorrência) + Financeiro + Finanças/coach + Custo, auth dupla, tenant, migração+seed, RLS camada 2 migrada. Dashboard: 6 telas. n8n: prompts + filtro de gatilho + multimodal (docs). Premortem de produção pronto.
 
-### Workflow n8n vivo (2026-06-17) — ✅ ATIVO E TESTADO NO WHATSAPP
-**Criado e funcionando** (n8n self-hosted easypanel): `Nina — Principal (WhatsApp)`, id **`Dqm3pJo2MNHcRZ1R`**, projeto `ScHAXN5Y8b3AwBfN`. Testado E2E: "nina, anota: ligar pro contador amanhã" → resposta correta no chat; guardrails do coach (disclaimer + pede confirmação) funcionando.
-- **Evolution**: base reportada `https://alicia-evolution-api.rte6ms.easypanel.host` (server_url do payload), instância `nina`. Credenciais OpenRouter + Evolution (Header Auth `apikey`) selecionadas na UI pelo Rodrigo; workflow publicado.
+### Workflow n8n vivo (2026-06-17) — ✅ ATIVO E TESTADO NO WHATSAPP (texto + ÁUDIO→ÁUDIO)
+**Criado e funcionando** (n8n self-hosted easypanel): `Nina — Principal (WhatsApp)`, id **`Dqm3pJo2MNHcRZ1R`**, projeto `ScHAXN5Y8b3AwBfN`, **14 nós**. Testado E2E: texto→texto e **áudio→áudio** (manda áudio, Nina transcreve e responde em voz).
+- **Evolution**: base reportada `https://alicia-evolution-api.rte6ms.easypanel.host` (server_url do payload), instância `nina`. Credenciais selecionadas na UI pelo Rodrigo; workflow publicado.
 - **Fix aplicado**: comparação de número tolerante ao 9º dígito BR (`554399864409` ≡ `5543999864409`) — o WhatsApp entrega o JID sem o nono dígito.
-- ⚠️ **Hoje é só conversacional**: a Nina responde via LLM mas **ainda NÃO persiste** (recados/tarefas/financeiro). A camada de tools (especialistas → API NestJS `/api/v1`) exige **API_BASE público** (n8n não alcança `localhost:3001`). Quando a Nina diz "lanço no fluxo de caixa?", ainda não há gravação por trás.
-- Fluxo (9 nós): Webhook `POST /webhook/nina` → **Filtro de Gatilho** (isolamento self-chat+sessão, config inline) → **Switch** (texto/mídia/pronta) → texto: **Nina (OpenRouter)** `qwen/qwen3.7-max` → Monta Resposta → **Evolution sendText**; mídia: "peça texto" → send; pronta (abertura): send direto.
-- Fonte versionada: `n8n/workflows/nina-main.workflow.ts` (SDK code, validado).
+- **Áudio (multimodal entrada/saída)**: por padrão **áudio recebido → resposta em áudio**. Transcrição via **OpenRouter `openai/whisper-1`** (endpoint `/audio/transcriptions`, `input_audio.{data,format}`); voz via **ElevenLabs** `eleven_multilingual_v2`, voz `r1KmysJdVYZjJCm4mL3b` → base64 (`extractFromFile`) → `sendWhatsAppAudio`.
+  - ⚠️ A credencial do nó **Gerar Voz (ElevenLabs)** é Header Auth **`xi-api-key`** (separada da Evolution `apikey`). Reusar a Evolution dá 401.
+- **De-branding aplicado**: o system prompt da Nina (nó **Nina (OpenRouter)**) e `n8n/prompts/nina-base.md` **não citam empresas/marcas/outros sistemas** — produto genérico, foco na tarefa pessoal.
+- ⚠️ **Ainda só conversacional**: responde via LLM mas **não persiste** (recados/tarefas/financeiro). A camada de tools (especialistas → API NestJS `/api/v1`) exige **API_BASE público** (n8n não alcança `localhost:3001`).
+- Fluxo (14 nós): Webhook `POST /webhook/nina` → **Filtro de Gatilho** (isolamento self-chat+sessão, config inline; áudio sempre processa) → **Roteia** (texto/mídia/pronta/áudio) → [texto: **Nina (OpenRouter)** `qwen/qwen3.7-max` → **Monta Resposta** (define `modo`) → **Modo de Resposta** (texto→`sendText` | áudio→**Gerar Voz (ElevenLabs)**→**Voz para Base64**→**Responder Áudio**)] · [áudio: **Baixar Áudio**→**Transcrever (OpenRouter)**→**Prep Texto Áudio**→Nina] · [mídia: "peça texto"→send] · [pronta: send direto].
+- Fonte versionada: `n8n/workflows/nina-main.workflow.ts` (SDK code, **re-sincronizado com o vivo + validado** `valid:true`, 14 nós).
 - URL produção do webhook: `https://alicia-n8n.rte6ms.easypanel.host/webhook/nina` · test: `/webhook-test/nina`.
-- **Inativo** (não publicado). Evolution: base `https://evolution.evotechsystem.cloud`, instância `nina`, URL do nó já fixada (`/message/sendText/nina`). Pendências para ir ao ar (passos do Rodrigo na UI — o MCP não cria/vincula credencial):
-  1. **Nina (OpenRouter)**: selecionar a credencial existente `OpenRouter account` (id `QSfQVD2ss2XVpPRB`) no nó (1 clique — MCP não vincula `predefinedCredentialType`).
-  2. **Evolution sendText**: criar credencial Header Auth `Evolution API (apikey)` (name `apikey`, value a chave da instância nina) e selecioná-la no nó. (Inlinear o segredo no JSON foi bloqueado pela regra "segredos só em env".) Apontar o webhook do Evolution (evento `MESSAGES_UPSERT`) para `/webhook/nina`; depois **publicar** (ativar).
-  3. Próxima iteração: camada de **tools** (orquestrador tier-fraco + especialistas chamando a API NestJS `/api/v1` com `x-service-token`+`x-tenant-id`) + nós de transcrição/visão — exige **API_BASE público** (a instância n8n não alcança `localhost:3001`).
+- Próxima iteração: camada de **tools** (orquestrador tier-fraco + especialistas chamando a API NestJS `/api/v1` com `x-service-token`+`x-tenant-id`) — exige **API_BASE público**.
 
 Outras pendências de deploy: enable RLS camada 2 (role não-owner, ADR-006) e GO/NO-GO de produção.
 
