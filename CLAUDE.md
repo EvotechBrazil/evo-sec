@@ -44,6 +44,12 @@
 - `agenda` — CRUD + `GET /agenda/disponibilidade` + `POST /agenda/:id/cancelar`
 - `financeiro/contas` — CRUD + `POST /financeiro/contas/:id/pagar` · `GET /financeiro/fluxo` · `GET /financeiro/vencimentos`
 - `financas/metas` (+ `POST /:id/aportar`) · `financas/investimentos` · `GET /financas/evolucao` (coach educativo, com disclaimer)
+- `usos-llm` (POST registrar · GET listar · `GET /usos-llm/resumo`) — telemetria de custo (microdólares)
+
+## RLS / segurança
+- Camada 1 (ativa): todo repositório filtra por `tenantId` (`requireTenantId()`).
+- Camada 2 (infra pronta): migração `rls_policies` habilitou RLS + política por tenant; enforcement total exige role não-owner (ver `.ai/ADR/ADR-006`).
+- Multimodal (áudio/foto/doc): `n8n/workflows/nina-multimodal.md`.
 
 ## Como rodar (dev)
 - Postgres: container Docker `evosec-pg` (5432). Backend: `cd backend && yarn start:dev` (usa `backend/.env`).

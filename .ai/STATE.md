@@ -1,7 +1,10 @@
 # STATE — evo-sec (Nina)   (atualizado 2026-06-16 por Claude)
 
 ## Status atual
-**Sprint 1 MVP COMPLETO na `main`** (7 PRs): (1-5) backend NestJS — auth dupla, tenant, CRUD GTD (Recados/Tarefas/Lembretes) + Agenda, migração `init` + seed, **Harness E2E verde** contra Postgres real; (6) n8n — prompts da Nina + filtro de gatilho (isolamento) + guia de setup; (7) dashboard Next.js (login + Início + Agenda + Aguardando, `next build` OK). `gh` autenticado, perms git liberadas, Docker `evosec-pg` rodando.
+**TODAS as sprints (1–4) concluídas e testadas (E2E + Playwright) na `main`** (10 PRs). Backend: GTD + Agenda (com recorrência) + Financeiro + Finanças/coach + Custo, auth dupla, tenant, migração+seed, RLS camada 2 migrada. Dashboard: 6 telas. n8n: prompts + filtro de gatilho + multimodal (docs). Premortem de produção pronto. Pendências para deploy: enable RLS camada 2 (role não-owner, ADR-006), construir o workflow n8n vivo na instância com credenciais (OpenRouter/Evolution), e o GO/NO-GO de produção.
+
+### Histórico
+**Sprint 1 MVP** (7 PRs): (1-5) backend NestJS — auth dupla, tenant, CRUD GTD (Recados/Tarefas/Lembretes) + Agenda, migração `init` + seed, **Harness E2E verde** contra Postgres real; (6) n8n — prompts da Nina + filtro de gatilho (isolamento) + guia de setup; (7) dashboard Next.js (login + Início + Agenda + Aguardando, `next build` OK). `gh` autenticado, perms git liberadas, Docker `evosec-pg` rodando.
 
 ## Próximas ações (roadmap restante)
 - Sprint 2 — Financeiro (gestão): módulo Conta (CRUD, padrão Recados) + fluxo de caixa + CRON vencimentos + tela.

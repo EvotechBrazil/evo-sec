@@ -152,3 +152,20 @@ export async function fetchInvestimentos(): Promise<Investimento[]> {
   const { data } = await api.get<{ data: Investimento[] }>('/financas/investimentos');
   return unwrap(data);
 }
+
+export interface ResumoCusto {
+  custoMicroUsd: number;
+  tokensIn: number;
+  tokensOut: number;
+  porModelo: { modelo: string; custoMicroUsd: number }[];
+}
+
+export async function fetchResumoCusto(): Promise<ResumoCusto> {
+  const { data } = await api.get<{ data: ResumoCusto }>('/usos-llm/resumo', {
+    params: { dias: 30 },
+  });
+  return unwrap(data);
+}
+
+export const usd = (micro: number) =>
+  (micro / 1_000_000).toLocaleString('en-US', { style: 'currency', currency: 'USD' });

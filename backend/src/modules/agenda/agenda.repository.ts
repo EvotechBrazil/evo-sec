@@ -33,6 +33,18 @@ export class AgendaRepository {
     });
   }
 
+  /** Bases recorrentes ativas (para expansão na leitura — ADR-005). */
+  findRecorrentes(): Promise<Compromisso[]> {
+    return this.prisma.compromisso.findMany({
+      where: {
+        tenantId: requireTenantId(),
+        deletedAt: null,
+        status: { in: ATIVOS },
+        regraRecorrencia: { not: null },
+      },
+    });
+  }
+
   findUpcoming(desde: Date): Promise<Compromisso[]> {
     return this.prisma.compromisso.findMany({
       where: {
