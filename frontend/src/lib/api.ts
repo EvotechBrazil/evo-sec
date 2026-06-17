@@ -81,3 +81,40 @@ export async function fetchLembretes(): Promise<Lembrete[]> {
   const { data } = await api.get<{ data: Lembrete[] }>('/lembretes');
   return unwrap(data);
 }
+
+export interface Conta {
+  id: string;
+  tipo: 'A_PAGAR' | 'A_RECEBER';
+  descricao: string;
+  categoria?: string | null;
+  valorCentavos: number;
+  vencimento: string;
+  status: string;
+  contraparte?: string | null;
+}
+
+export interface FluxoCaixa {
+  entradasCentavos: number;
+  saidasCentavos: number;
+  saldoCentavos: number;
+}
+
+export async function fetchContas(): Promise<Conta[]> {
+  const { data } = await api.get<{ data: Conta[] }>('/financeiro/contas');
+  return unwrap(data);
+}
+
+export async function fetchFluxo(): Promise<FluxoCaixa> {
+  const { data } = await api.get<{ data: FluxoCaixa }>('/financeiro/fluxo');
+  return unwrap(data);
+}
+
+export async function fetchVencimentos(): Promise<Conta[]> {
+  const { data } = await api.get<{ data: Conta[] }>('/financeiro/vencimentos', {
+    params: { dias: 7 },
+  });
+  return unwrap(data);
+}
+
+export const reais = (centavos: number) =>
+  (centavos / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });

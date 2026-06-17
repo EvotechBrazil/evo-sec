@@ -37,3 +37,15 @@
 - Fraco: `nvidia/nemotron-3.5-content-safety:free` (classificar + content-safety)
 - Intermediário: `qwen/qwen3.7-max`
 - Premium: `anthropic/claude-sonnet-4.6`
+
+## API (rotas, base `/api/v1`) — todas tenant-scoped (JWT ou x-service-token+x-tenant-id)
+- `POST /auth/login` (público)
+- `recados`, `tarefas`, `lembretes` — CRUD GTD
+- `agenda` — CRUD + `GET /agenda/disponibilidade` + `POST /agenda/:id/cancelar`
+- `financeiro/contas` — CRUD + `POST /financeiro/contas/:id/pagar` · `GET /financeiro/fluxo` · `GET /financeiro/vencimentos`
+- (Sprint 3) `financas/metas`, `financas/investimentos`, `financas/evolucao`
+
+## Como rodar (dev)
+- Postgres: container Docker `evosec-pg` (5432). Backend: `cd backend && yarn start:dev` (usa `backend/.env`).
+- Frontend: `cd frontend && yarn dev` (http://localhost:3000). Login seed: tiago@crossfitarapongas.com.br.
+- Sempre matar a porta 3001 antes de subir o backend novo (evita servir build antigo).
