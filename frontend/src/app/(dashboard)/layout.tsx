@@ -11,6 +11,7 @@ const NAV = [
   { href: '/aguardando', label: 'Aguardando' },
   { href: '/financeiro', label: 'Financeiro' },
   { href: '/pe-de-meia', label: 'Pé de meia' },
+  { href: '/custo', label: 'Custo' },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {

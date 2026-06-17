@@ -40,11 +40,45 @@ export class AgendaService {
     return { disponivel: conflitos.length === 0, conflitos };
   }
 
-  list(inicioIso?: string, fimIso?: string): Promise<Compromisso[]> {
-    if (inicioIso && fimIso) {
-      return this.repo.findOverlapping(new Date(inicioIso), new Date(fimIso));
+  async list(inicioIso?: string, fimIso?: string): Promise<Compromisso[]> {
+    if (!inicioIso || !fimIso) {
+      return this.repo.findUpcoming(new Date());
     }
-    return this.repo.findUpcoming(new Date());
+    const ini = new Date(inicioIso);
+    const fim = new Date(fimIso);
+    const [overlapping, recorrentes] = await Promise.all([
+      this.repo.findOverlapping(ini, fim),
+      this.repo.findRecorrentes(),
+    ]);
+    const naoRecorrentes = overlapping.filter((c) => !c.regraRecorrencia);
+    const ocorrencias = recorrentes.flatMap((c) => this.expandir(c, ini, fim));
+    return [...naoRecorrentes, ...ocorrencias].sort(
+      (a, b) => a.inicio.getTime() - b.inicio.getTime(),
+    );
+  }
+
+  /** Expande uma base recorrente em ocorrências dentro de [ini, fim] (ADR-005). */
+  private expandir(base: Compromisso, ini: Date, fim: Date): Compromisso[] {
+    const regra = (base.regraRecorrencia ?? '').toLowerCase();
+    const duracaoMs = base.fim ? base.fim.getTime() - base.inicio.getTime() : 0;
+    const ocorrencias: Compromisso[] = [];
+    const cursor = new Date(base.inicio);
+    for (let i = 0; i < 750 && cursor <= fim; i++) {
+      if (cursor >= ini) {
+        const inicio = new Date(cursor);
+        ocorrencias.push({
+          ...base,
+          inicio,
+          fim: duracaoMs ? new Date(inicio.getTime() + duracaoMs) : base.fim,
+        });
+      }
+      if (regra === 'diario') cursor.setDate(cursor.getDate() + 1);
+      else if (regra === 'semanal') cursor.setDate(cursor.getDate() + 7);
+      else if (regra === 'mensal') cursor.setMonth(cursor.getMonth() + 1);
+      else if (regra === 'anual') cursor.setFullYear(cursor.getFullYear() + 1);
+      else break; // regra desconhecida → só a base
+    }
+    return ocorrencias;
   }
 
   async get(id: string): Promise<Compromisso> {
