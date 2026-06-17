@@ -47,3 +47,6 @@ tmp/
 
 # Claude Code local config (permissões pessoais)
 .claude/settings.local.json
+
+# Playwright MCP artifacts
+.playwright-mcp/
