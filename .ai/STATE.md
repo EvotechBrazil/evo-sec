@@ -5,13 +5,13 @@
 
 ### Workflow n8n vivo (2026-06-17) — ✅ ATIVO E TESTADO NO WHATSAPP
 **Criado e funcionando** (n8n self-hosted easypanel): `Nina — Principal (WhatsApp)`, id **`Dqm3pJo2MNHcRZ1R`**, projeto `ScHAXN5Y8b3AwBfN`. Testado E2E: "nina, anota: ligar pro contador amanhã" → resposta correta no chat; guardrails do coach (disclaimer + pede confirmação) funcionando.
-- **Evolution**: base reportada `https://alicia-evolution-api.rte6ms.easypanel.host` (server_url do payload), instância `nina`. Credenciais OpenRouter + Evolution (Header Auth `apikey`) selecionadas na UI pelo Tiago; workflow publicado.
+- **Evolution**: base reportada `https://alicia-evolution-api.rte6ms.easypanel.host` (server_url do payload), instância `nina`. Credenciais OpenRouter + Evolution (Header Auth `apikey`) selecionadas na UI pelo Rodrigo; workflow publicado.
 - **Fix aplicado**: comparação de número tolerante ao 9º dígito BR (`554399864409` ≡ `5543999864409`) — o WhatsApp entrega o JID sem o nono dígito.
 - ⚠️ **Hoje é só conversacional**: a Nina responde via LLM mas **ainda NÃO persiste** (recados/tarefas/financeiro). A camada de tools (especialistas → API NestJS `/api/v1`) exige **API_BASE público** (n8n não alcança `localhost:3001`). Quando a Nina diz "lanço no fluxo de caixa?", ainda não há gravação por trás.
 - Fluxo (9 nós): Webhook `POST /webhook/nina` → **Filtro de Gatilho** (isolamento self-chat+sessão, config inline) → **Switch** (texto/mídia/pronta) → texto: **Nina (OpenRouter)** `qwen/qwen3.7-max` → Monta Resposta → **Evolution sendText**; mídia: "peça texto" → send; pronta (abertura): send direto.
 - Fonte versionada: `n8n/workflows/nina-main.workflow.ts` (SDK code, validado).
 - URL produção do webhook: `https://alicia-n8n.rte6ms.easypanel.host/webhook/nina` · test: `/webhook-test/nina`.
-- **Inativo** (não publicado). Evolution: base `https://evolution.evotechsystem.cloud`, instância `nina`, URL do nó já fixada (`/message/sendText/nina`). Pendências para ir ao ar (passos do Tiago na UI — o MCP não cria/vincula credencial):
+- **Inativo** (não publicado). Evolution: base `https://evolution.evotechsystem.cloud`, instância `nina`, URL do nó já fixada (`/message/sendText/nina`). Pendências para ir ao ar (passos do Rodrigo na UI — o MCP não cria/vincula credencial):
   1. **Nina (OpenRouter)**: selecionar a credencial existente `OpenRouter account` (id `QSfQVD2ss2XVpPRB`) no nó (1 clique — MCP não vincula `predefinedCredentialType`).
   2. **Evolution sendText**: criar credencial Header Auth `Evolution API (apikey)` (name `apikey`, value a chave da instância nina) e selecioná-la no nó. (Inlinear o segredo no JSON foi bloqueado pela regra "segredos só em env".) Apontar o webhook do Evolution (evento `MESSAGES_UPSERT`) para `/webhook/nina`; depois **publicar** (ativar).
   3. Próxima iteração: camada de **tools** (orquestrador tier-fraco + especialistas chamando a API NestJS `/api/v1` com `x-service-token`+`x-tenant-id`) + nós de transcrição/visão — exige **API_BASE público** (a instância n8n não alcança `localhost:3001`).
@@ -19,13 +19,13 @@
 Outras pendências de deploy: enable RLS camada 2 (role não-owner, ADR-006) e GO/NO-GO de produção.
 
 ### Redesign do Dashboard (2026-06-17) — ✅ FEITO E TESTADO
-**Tema mobile-first preto + amarelo, fonte Archivo (Google Fonts), premium "noir".** Definido via 9 mockups + 4 híbridos (rotas `/mockups/*`, mantidas como referência viva). Direção escolhida pelo Tiago: home estilo "equilíbrio" (v6) + Finanças/Custo estilo "painel" (v8) + tela de voz "orbe" (v7); display em **Archivo**.
+**Tema mobile-first preto + amarelo, fonte Archivo (Google Fonts), premium "noir".** Definido via 9 mockups + 4 híbridos (rotas `/mockups/*`, mantidas como referência viva). Direção escolhida pelo Rodrigo: home estilo "equilíbrio" (v6) + Finanças/Custo estilo "painel" (v8) + tela de voz "orbe" (v7); display em **Archivo**.
 - Fundação: `src/app/layout.tsx` (Archivo + `class="dark"`), `tailwind.config.ts` (darkMode class, fontFamily Archivo, tokens Tremor light+dark, safelist de cores de chart), `globals.css` (bg neutral-950). `@tremor/react`+`recharts` instalados (tokens dark prontos); gráficos atuais são **SVG nativos** (Area/Donut/Spark/Progress) no UI kit, batendo pixel com os mockups aprovados.
 - UI kit: `src/components/ui.tsx` (Card, SectionTitle, Pill, Progress, Spark, StatTile, AreaChartSvg, Donut, VoiceOrb, MicIcon, Loading, EmptyState, PageHeader).
 - Shell: `(dashboard)/layout.tsx` (header + bottom nav 6 itens com ícones + FAB de voz → `/falar`). Login tematizado.
 - 7 telas reais com dados da API + estados loading/empty: Início, Agenda (agrupada por dia), Espera, Financeiro (KPIs + donut a pagar×receber + listas), Pé-de-meia (total + metas Progress + investimentos + disclaimer), Custo (KPIs + donut por modelo), **Falar com a Nina** (`/falar`, orbe + waveform + contexto).
 - **Validado**: `tsc --noEmit` verde; testado E2E no Playwright (login real + 7 telas, viewport 390px). Screenshots na raiz: `app-*.png`.
-- Deploy do front: provavelmente **Vercel** (Tiago). Pendente: trocar `NEXT_PUBLIC_API_URL` para o backend público; favicon; PWA opcional.
+- Deploy do front: provavelmente **Vercel** (Rodrigo). Pendente: trocar `NEXT_PUBLIC_API_URL` para o backend público; favicon; PWA opcional.
 
 ### Histórico
 **Sprint 1 MVP** (7 PRs): (1-5) backend NestJS — auth dupla, tenant, CRUD GTD (Recados/Tarefas/Lembretes) + Agenda, migração `init` + seed, **Harness E2E verde** contra Postgres real; (6) n8n — prompts da Nina + filtro de gatilho (isolamento) + guia de setup; (7) dashboard Next.js (login + Início + Agenda + Aguardando, `next build` OK). `gh` autenticado, perms git liberadas, Docker `evosec-pg` rodando.
@@ -41,16 +41,16 @@ Outras pendências de deploy: enable RLS camada 2 (role não-owner, ADR-006) e G
 
 ## Próximas ações
 1. Backend foundation: NestJS scaffold + PrismaModule + middleware/RLS + Auth/Tenant + CRUD GTD.
-2. Migração inicial + policies RLS (SQL) + seed do tenant Tiago.
+2. Migração inicial + policies RLS (SQL) + seed do tenant Rodrigo.
 3. n8n: workflow principal (filtro gatilho → normalização multimodal → orquestrador → especialistas) + OpenRouter.
 4. Dashboard core (Next.js) + multimodal adapters.
 
-## Inputs pendentes do Tiago (para popular na execução)
-- Código/palavra do gatilho + número do Evolution (tenant Tiago).
+## Inputs pendentes do Rodrigo (para popular na execução)
+- Código/palavra do gatilho + número do Evolution (tenant Rodrigo).
 - Provider de transcrição (áudio) e visão/OCR (foto/doc).
 
 ## Bloqueios/pendências
-- Definir valor do código/palavra do gatilho e número do Evolution do Tiago (popular `Tenant`/`Config` na Sprint 0/1).
+- Definir valor do código/palavra do gatilho e número do Evolution do Rodrigo (popular `Tenant`/`Config` na Sprint 0/1).
 - Definir provider de transcrição (áudio) e visão/OCR (foto/doc) — Sprint 1.
 
 ## Decisões recentes (links p/ ADR)

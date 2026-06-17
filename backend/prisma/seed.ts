@@ -1,5 +1,5 @@
 /**
- * Seed do evo-sec (Nina) — cria o tenant do Tiago, usuário owner, configuração
+ * Seed do evo-sec (Nina) — cria o tenant do Rodrigo, usuário owner, configuração
  * de modelos (OpenRouter, 3 tiers — ADR-002) e config do gatilho (ADR-003).
  * Idempotente (upsert). Segredos/valores reais vêm do ambiente.
  */
@@ -45,7 +45,7 @@ async function main(): Promise<void> {
     },
     create: {
       id: '00000000-0000-0000-0000-000000000001',
-      nome: 'Tiago Santos',
+      nome: 'Rodrigo Dias Barreto',
       timezone: 'America/Sao_Paulo',
       evolutionInstance: process.env.EVOLUTION_INSTANCE ?? 'nina',
       whatsappNumber: whatsapp || null,
@@ -62,7 +62,7 @@ async function main(): Promise<void> {
     create: {
       tenantId: tenant.id,
       email,
-      nome: 'Tiago Santos',
+      nome: 'Rodrigo Dias Barreto',
       passwordHash: await bcrypt.hash(senha, 10),
       role: 'OWNER',
     },

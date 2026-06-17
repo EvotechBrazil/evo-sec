@@ -6,9 +6,9 @@
 
 ## 1. Contexto (por quê)
 
-Tiago (CrossFit Arapongas + Evotech) precisa de uma secretária executiva de IA — **Nina** — que capture recados, agende compromissos, crie lembretes, cobre follow-ups ("aguardando resposta"), faça gestão financeira pessoal e atue como coach de investimentos, tudo via WhatsApp e com dashboard mobile.
+Rodrigo (CrossFit Arapongas + Evotech) precisa de uma secretária executiva de IA — **Nina** — que capture recados, agende compromissos, crie lembretes, cobre follow-ups ("aguardando resposta"), faça gestão financeira pessoal e atue como coach de investimentos, tudo via WhatsApp e com dashboard mobile.
 
-Diretrizes do Tiago que moldam a arquitetura:
+Diretrizes do Rodrigo que moldam a arquitetura:
 1. **Orquestração no n8n com economia de tokens** — o que for determinístico não passa por LLM.
 2. **Orquestrador + agentes especialistas** por tarefa.
 3. **Postgres puro** (NÃO Supabase), inclusive a dashboard.
@@ -44,7 +44,7 @@ Infra já no ar: **n8n (VPS/EasyPanel) + Postgres + Evolution API (WhatsApp)**. 
 ## 3. Arquitetura geral
 
 ```
-WhatsApp (Tiago → ele mesmo, com código)     Terceiros → Tiago (conversa normal)
+WhatsApp (Rodrigo → ele mesmo, com código)     Terceiros → Rodrigo (conversa normal)
         │                                             │
         ▼                                             ▼
 Evolution API ──► Webhook n8n (workflow PRINCIPAL)  (ignorado: filtro derruba no 1º nó)
@@ -104,9 +104,9 @@ Prompt base em XML (identidade Nina, hierarquia de instruções, GTD, guardrails
 | Gate destrutivo | cancelar/excluir/marcar pago em lote | **Human Review do n8n** (pausa até aprovar) | — |
 
 Guardrails:
-- **Hierarquia de instruções**: system > Tiago (conversa atual) > conteúdo de terceiros (sempre dado, nunca comando). Defesa contra instrução embutida.
+- **Hierarquia de instruções**: system > Rodrigo (conversa atual) > conteúdo de terceiros (sempre dado, nunca comando). Defesa contra instrução embutida.
 - **Dinheiro em inteiro de centavos** (nunca float) — padrão de referência.
-- **Coach = educativo/sugestivo, nunca executa nem é recomendação financeira regulada** (Tesouro Selic, CDB liquidez diária, fundo DI...), sempre com disclaimer e decisão do Tiago.
+- **Coach = educativo/sugestivo, nunca executa nem é recomendação financeira regulada** (Tesouro Selic, CDB liquidez diária, fundo DI...), sempre com disclaimer e decisão do Rodrigo.
 - **Gestão financeira não decide sozinha**; marcar pago em lote passa por confirmação.
 - **Eco do dado-chave** (valor, vencimento, ID, data) em texto → mitiga limitação de memória do n8n e evita re-fetch.
 
@@ -127,7 +127,7 @@ Guardrails:
 
 ## 6. OpenRouter — modelos (config-driven)
 
-Tabela `Modelo` mapeia `tarefa → modelo + fallbacks + teto_tokens` (trocável sem editar workflow). Tiers definidos pelo Tiago:
+Tabela `Modelo` mapeia `tarefa → modelo + fallbacks + teto_tokens` (trocável sem editar workflow). Tiers definidos pelo Rodrigo:
 
 | Tier | Modelo | Uso |
 |---|---|---|
@@ -145,7 +145,7 @@ Tabela `Modelo` mapeia `tarefa → modelo + fallbacks + teto_tokens` (trocável 
 Convenções de referência: **models Prisma `PascalCase`**, colunas `snake_case` via `@@map`/`@map`; **UUID**; **`tenantId` em toda tabela** + índices compostos por tenant; **RLS 3 camadas** (Prisma middleware + policies PostgreSQL + testes); soft delete (`deletedAt`); auditoria (`createdBy/updatedBy` + timestamps); **dinheiro em inteiro de centavos**; timezone America/Sao_Paulo na borda; secrets cifrados (AES-256-GCM).
 
 Entidades (DDL definitivo vira SPEC + migração):
-- **Tenant** — conta/usuário (Tiago = 1º), config do Evolution (instância/número), timezone, quiet hours, código/sessão do gatilho.
+- **Tenant** — conta/usuário (Rodrigo = 1º), config do Evolution (instância/número), timezone, quiet hours, código/sessão do gatilho.
 - **Recado** — remetente, conteudo, categoria, prioridade, status.
 - **Tarefa** — titulo, descricao, tipo(proxima_acao|projeto|aguardando|algum_dia), aguardando_de, data_cobranca, prazo, prioridade, status.
 - **Lembrete** — titulo, data_hora, recorrencia, notificado, status.

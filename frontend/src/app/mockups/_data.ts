@@ -1,7 +1,7 @@
 // Dados de exemplo compartilhados pelos mockups (preto + amarelo).
 // Não usa API — valores fixos só para preview visual.
 
-export const usuario = { nome: 'Tiago', saudacao: 'Boa tarde' };
+export const usuario = { nome: 'Rodrigo', saudacao: 'Boa tarde' };
 
 export const agenda = [
   { id: '1', titulo: 'Treino CrossFit (turma 18h)', hora: '18:00', local: 'Box Arapongas', tag: 'CrossFit' },

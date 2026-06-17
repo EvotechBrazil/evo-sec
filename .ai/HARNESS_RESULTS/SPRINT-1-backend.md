@@ -1,6 +1,6 @@
 # HARNESS — Sprint 1 Backend — 2026-06-16
 
-Ambiente: Postgres 16 (Docker), migração `init` aplicada, seed do tenant Tiago.
+Ambiente: Postgres 16 (Docker), migração `init` aplicada, seed do tenant Rodrigo.
 
 | Gate | Status | Notas |
 |---|---|---|
