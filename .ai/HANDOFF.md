@@ -26,7 +26,7 @@ cd e:/Projetos/Sec/backend && yarn start:dev
 
 # 3. Frontend (porta 3000)
 cd e:/Projetos/Sec/frontend && yarn dev
-# Login: tiago@crossfitarapongas.com.br  /  Nina@2026#troque
+# Login: rodrigo@crossfitarapongas.com.br  /  Nina@2026#troque
 ```
 
 ## Comando de retorno (cole no início da próxima sessão)

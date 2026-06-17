@@ -53,5 +53,5 @@
 
 ## Como rodar (dev)
 - Postgres: container Docker `evosec-pg` (5432). Backend: `cd backend && yarn start:dev` (usa `backend/.env`).
-- Frontend: `cd frontend && yarn dev` (http://localhost:3000). Login seed: tiago@crossfitarapongas.com.br.
+- Frontend: `cd frontend && yarn dev` (http://localhost:3000). Login seed: rodrigo@crossfitarapongas.com.br.
 - Sempre matar a porta 3001 antes de subir o backend novo (evita servir build antigo).

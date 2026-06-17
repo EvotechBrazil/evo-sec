@@ -31,7 +31,7 @@ const CONFIGS: Record<string, string> = {
 };
 
 async function main(): Promise<void> {
-  const email = process.env.SEED_OWNER_EMAIL ?? 'tiago@crossfitarapongas.com.br';
+  const email = process.env.SEED_OWNER_EMAIL ?? 'rodrigo@crossfitarapongas.com.br';
   const senha = process.env.SEED_OWNER_PASSWORD ?? 'troque-esta-senha';
   const whatsapp = process.env.EVOLUTION_WHATSAPP_NUMBER ?? '';
   const gatilho = process.env.GATILHO_CODIGO ?? 'nina';
