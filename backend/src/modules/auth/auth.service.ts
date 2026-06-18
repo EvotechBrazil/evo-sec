@@ -32,6 +32,22 @@ export class AuthService {
     return this.issueTokens(user.id, user.tenantId);
   }
 
+  async changePassword(
+    userId: string,
+    senhaAtual: string,
+    novaSenha: string,
+  ): Promise<{ ok: true }> {
+    const user = await this.prisma.user.findFirst({
+      where: { id: userId, deletedAt: null },
+    });
+    if (!user || !(await bcrypt.compare(senhaAtual, user.passwordHash))) {
+      throw new UnauthorizedException('Senha atual incorreta.');
+    }
+    const passwordHash = await bcrypt.hash(novaSenha, 10);
+    await this.prisma.user.update({ where: { id: user.id }, data: { passwordHash } });
+    return { ok: true };
+  }
+
   private async issueTokens(sub: string, tenantId: string): Promise<AuthTokens> {
     const payload = { sub, tenantId };
     const accessExpires = this.env.jwtAccessTtl as JwtSignOptions['expiresIn'];

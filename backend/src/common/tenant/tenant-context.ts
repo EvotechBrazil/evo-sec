@@ -16,6 +16,10 @@ export function getTenantId(): string | undefined {
   return tenantStorage.getStore()?.tenantId;
 }
 
+export function getUserId(): string | undefined {
+  return tenantStorage.getStore()?.userId;
+}
+
 export function runWithTenant<T>(store: TenantStore, fn: () => T): T {
   return tenantStorage.run(store, fn);
 }
