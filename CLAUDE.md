@@ -39,7 +39,8 @@
 - Premium: `anthropic/claude-sonnet-4.6`
 
 ## API (rotas, base `/api/v1`) — todas tenant-scoped (JWT ou x-service-token+x-tenant-id)
-- `POST /auth/login` (público)
+- `POST /auth/login` (público) · `PATCH /auth/senha` (troca de senha, JWT)
+- `POST /nina/mensagem` {texto, pendente?} — cérebro da Nina na API (NLU via OpenRouter → executa/confirma); usado pela voz do app (`/falar`). Requer `OPENROUTER_API_KEY`.
 - `recados`, `tarefas`, `lembretes` — CRUD GTD
 - `agenda` — CRUD + `GET /agenda/disponibilidade` + `POST /agenda/:id/cancelar`
 - `financeiro/contas` — CRUD + `POST /financeiro/contas/:id/pagar` · `GET /financeiro/fluxo` · `GET /financeiro/vencimentos`
@@ -50,6 +51,10 @@
 - Camada 1 (ativa): todo repositório filtra por `tenantId` (`requireTenantId()`).
 - Camada 2 (infra pronta): migração `rls_policies` habilitou RLS + política por tenant; enforcement total exige role não-owner (ver `.ai/ADR/ADR-006`).
 - Multimodal (áudio/foto/doc): `n8n/workflows/nina-multimodal.md`.
+
+## Produção (EasyPanel, projeto `nina`) — NO AR
+- API `https://nina-api.rte6ms.easypanel.host/api/v1` · Front `https://nina-web.rte6ms.easypanel.host` · Postgres interno `nina_db`. Deploy por Dockerfile a partir do `main`. **Estado vivo + handoff em `.ai/STATE.md`.**
+- n8n (cérebro WhatsApp) ativo: workflow `Dqm3pJo2MNHcRZ1R`. Pendências: `OPENROUTER_API_KEY` no env da API; credenciais dos nós novos no n8n + Publish; RLS camada 2.
 
 ## Como rodar (dev)
 - Postgres: container Docker `evosec-pg` (5432). Backend: `cd backend && yarn start:dev` (usa `backend/.env`).
