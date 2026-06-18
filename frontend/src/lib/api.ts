@@ -62,6 +62,10 @@ export async function login(email: string, password: string): Promise<string> {
   return unwrap(data).accessToken;
 }
 
+export async function changePassword(senhaAtual: string, novaSenha: string): Promise<void> {
+  await api.patch('/auth/senha', { senhaAtual, novaSenha });
+}
+
 export async function fetchRecados(): Promise<Recado[]> {
   const { data } = await api.get<{ data: Recado[] }>('/recados');
   return unwrap(data);
