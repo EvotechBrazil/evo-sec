@@ -84,6 +84,23 @@ export async function changePassword(senhaAtual: string, novaSenha: string): Pro
   await api.patch('/auth/senha', { senhaAtual, novaSenha });
 }
 
+export interface NinaReply {
+  resposta: string;
+  acao: string;
+  pendente?: Record<string, unknown> | null;
+}
+
+export async function ninaMensagem(
+  texto: string,
+  pendente?: Record<string, unknown> | null,
+): Promise<NinaReply> {
+  const { data } = await api.post<{ data: NinaReply }>('/nina/mensagem', {
+    texto,
+    pendente: pendente ?? undefined,
+  });
+  return unwrap(data);
+}
+
 export async function fetchRecados(): Promise<Recado[]> {
   const { data } = await api.get<{ data: Recado[] }>('/recados');
   return unwrap(data);

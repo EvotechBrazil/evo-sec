@@ -6,5 +6,6 @@ import { LembretesRepository } from './lembretes.repository';
 @Module({
   controllers: [LembretesController],
   providers: [LembretesService, LembretesRepository],
+  exports: [LembretesService],
 })
 export class LembretesModule {}

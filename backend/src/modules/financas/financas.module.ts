@@ -6,5 +6,6 @@ import { FinancasRepository } from './financas.repository';
 @Module({
   controllers: [FinancasController],
   providers: [FinancasService, FinancasRepository],
+  exports: [FinancasService],
 })
 export class FinancasModule {}

@@ -6,5 +6,6 @@ import { RecadosRepository } from './recados.repository';
 @Module({
   controllers: [RecadosController],
   providers: [RecadosService, RecadosRepository],
+  exports: [RecadosService],
 })
 export class RecadosModule {}
