@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { getToken } from './auth';
+import { getToken, clearToken } from './auth';
 
 const baseURL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api/v1';
 
@@ -12,6 +12,24 @@ api.interceptors.request.use((config) => {
   }
   return config;
 });
+
+// 401 por token ausente/expirado → desloga e volta pro login (não fica falhando
+// em silêncio). 401 de regra de negócio (ex.: senha atual incorreta) é repassado
+// pra tela tratar; o login também trata o próprio 401.
+api.interceptors.response.use(
+  (res) => res,
+  (error) => {
+    const status = error?.response?.status;
+    const msg: string = error?.response?.data?.message ?? '';
+    const url: string = error?.config?.url ?? '';
+    const tokenIssue = /token|credenciais ausentes|expirad/i.test(msg);
+    if (status === 401 && tokenIssue && !url.includes('/auth/login') && typeof window !== 'undefined') {
+      clearToken();
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  },
+);
 
 // Envelope padrão do backend: { data, meta }
 function unwrap<T>(payload: { data: T }): T {

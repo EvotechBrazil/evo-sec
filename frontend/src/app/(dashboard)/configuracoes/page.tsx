@@ -29,8 +29,11 @@ export default function ConfiguracoesPage() {
       setSenhaAtual('');
       setNovaSenha('');
       setConfirma('');
-    } catch {
-      setMsg({ tipo: 'erro', texto: 'Não foi possível alterar. Confira a senha atual.' });
+    } catch (e: unknown) {
+      const resp = (e as { response?: { data?: { message?: string | string[] } } })?.response;
+      const m = resp?.data?.message;
+      const texto = Array.isArray(m) ? m.join(' ') : m || 'Não foi possível alterar. Confira a senha atual.';
+      setMsg({ tipo: 'erro', texto });
     } finally {
       setLoading(false);
     }
