@@ -13,6 +13,8 @@ export interface AppEnv {
   jwtRefreshTtl: string;
   encryptionKey: string;
   serviceToken: string;
+  openrouterApiKey: string;
+  openrouterModel: string;
 }
 
 const REQUIRED = [
@@ -42,5 +44,7 @@ export function loadEnv(): AppEnv {
     jwtRefreshTtl: process.env.JWT_REFRESH_TTL ?? '7d',
     encryptionKey: process.env.ENCRYPTION_KEY as string,
     serviceToken: process.env.SERVICE_TOKEN as string,
+    openrouterApiKey: process.env.OPENROUTER_API_KEY ?? '',
+    openrouterModel: process.env.OPENROUTER_MODEL_INTER ?? 'qwen/qwen3.7-max',
   };
 }

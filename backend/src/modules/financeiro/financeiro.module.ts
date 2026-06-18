@@ -6,5 +6,6 @@ import { FinanceiroRepository } from './financeiro.repository';
 @Module({
   controllers: [FinanceiroController],
   providers: [FinanceiroService, FinanceiroRepository],
+  exports: [FinanceiroService],
 })
 export class FinanceiroModule {}

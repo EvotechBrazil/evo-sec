@@ -6,5 +6,6 @@ import { TarefasRepository } from './tarefas.repository';
 @Module({
   controllers: [TarefasController],
   providers: [TarefasService, TarefasRepository],
+  exports: [TarefasService],
 })
 export class TarefasModule {}
