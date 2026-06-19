@@ -121,17 +121,17 @@ export function limitesDoDia(now: Date, tz: string): { inicio: Date; fim: Date }
   return { inicio, fim };
 }
 
-/** Janela [início, fim) de `dias` dias terminando no fim do dia local de `now`. */
-export function limitesDaJanela(
-  now: Date,
-  tz: string,
-  dias: number,
-): { inicio: Date; fim: Date } {
+/**
+ * Janela [domingo 00:00, próximo domingo 00:00) da semana local (no tz do
+ * tenant) que contém `now`. A semana começa no domingo → curva DSTQQSS.
+ */
+export function limitesDaSemana(now: Date, tz: string): { inicio: Date; fim: Date } {
+  const p = partsInTz(now, tz);
+  const dow = new Date(Date.UTC(p.year, p.month - 1, p.day)).getUTCDay(); // 0=domingo
   const dia = limitesDoDia(now, tz);
-  return {
-    inicio: new Date(dia.fim.getTime() - dias * 86_400_000),
-    fim: dia.fim,
-  };
+  const inicio = new Date(dia.inicio.getTime() - dow * 86_400_000);
+  const fim = new Date(inicio.getTime() + 7 * 86_400_000);
+  return { inicio, fim };
 }
 
 /** "24/05" no tz do tenant. */

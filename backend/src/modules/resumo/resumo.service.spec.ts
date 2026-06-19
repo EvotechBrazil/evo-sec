@@ -125,5 +125,7 @@ describe('ResumoService.semanal', () => {
     expect(r.resumo.backlogPendente).toBe(1);
     expect(r.resumo.backlogAtrasado).toBe(1);
     expect(r.texto).toContain('Resumo da semana');
+    // sem espaços sobrando no fim de nenhuma linha
+    expect(r.texto.split('\n').every((l) => l === l.replace(/[ \t]+$/, ''))).toBe(true);
   });
 });

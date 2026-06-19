@@ -20,7 +20,7 @@ import {
   fmtData,
   fmtHora,
   fmtMoeda,
-  limitesDaJanela,
+  limitesDaSemana,
   limitesDoDia,
   seta,
   sparkline,
@@ -225,7 +225,7 @@ export class ResumoService {
     const janela =
       inicioIso && fimIso
         ? { inicio: new Date(inicioIso), fim: new Date(`${fimIso}T23:59:59Z`) }
-        : limitesDaJanela(agora, timezone, 7);
+        : limitesDaSemana(agora, timezone);
     const duracao = janela.fim.getTime() - janela.inicio.getTime();
     const anterior = {
       inicio: new Date(janela.inicio.getTime() - duracao),
@@ -356,7 +356,8 @@ export class ResumoService {
       L.push('👍 Semana sob controle. Defina 1-2 prioridades pra próxima.');
     }
 
-    return L.join('\n');
+    // remove espaços sobrando no fim de cada linha (ex.: KPI sem comparativo)
+    return L.map((l) => l.replace(/[ \t]+$/, '')).join('\n');
   }
 
   private comparativo(atual: number, anterior: number): string {
