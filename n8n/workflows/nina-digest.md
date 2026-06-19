@@ -67,11 +67,14 @@ A API lê flags em `Config` (key-value já existente):
 - `digest_semanal_ativo` = `"false"` desliga o semanal.
 - Número de destino = `Tenant.whatsapp_number` (já no schema).
 
-## Pendência manual conhecida (limitação MCP n8n)
-Criar/anexar credencial `httpHeaderAuth` via `addNode` é bloqueado pelo MCP (ver `.ai/STATE.md`). Ao importar este workflow:
-1. Selecionar a credencial **"Nina API service token"** no nó [2] e a **Evolution** no nó [4] pela UI.
-2. **Publish**.
-3. Testar: executar o trigger manualmente (botão *Test workflow*) e confirmar a mensagem no WhatsApp.
+## Status: JÁ CRIADO via MCP
+Workflow **`rob9zT99LztycoVp`** (`Nina — Digest Matinal + Semanal`) criado pelo MCP do n8n com os 6 nós, conexões, cron, headers, body e condições do IF prontos. Inativo de propósito (ativar só depois do deploy da API + credenciais).
+
+Único passo manual (o Tiago faz): **apontar as credenciais** na UI — o `setNodeCredential` do MCP recusa credencial genérica condicional do `httpRequest`:
+1. Nós **Buscar Resumo Diário** e **Buscar Resumo Semanal** → credencial **"Nina API service token"**.
+2. Nó **Enviar no WhatsApp** → credencial **Evolution**.
+3. Confirmar que a API (`/resumo/*`) está no ar e `Tenant.whatsapp_number` preenchido.
+4. **Ativar** o workflow (toggle) — ou *Test workflow* pra validar antes.
 
 ## Restrições (espelham a skill de origem e a SPEC-002)
 - Envia **só pro dono** (privado), nunca grupo — relatório tem nome de cliente/recado (LGPD).
