@@ -46,6 +46,7 @@
 - `financeiro/contas` — CRUD + `POST /financeiro/contas/:id/pagar` · `GET /financeiro/fluxo` · `GET /financeiro/vencimentos`
 - `financas/metas` (+ `POST /:id/aportar`) · `financas/investimentos` · `GET /financas/evolucao` (coach educativo, com disclaimer)
 - `usos-llm` (POST registrar · GET listar · `GET /usos-llm/resumo`) — telemetria de custo (microdólares)
+- `GET /resumo/diario` (`?data`) · `GET /resumo/semanal` (`?inicio&?fim`) — **digest proativo** (SPEC-002): reusa os services, devolve `{data:{ativo,numero,dia|inicio/fim,resumo,texto}}` com texto pronto p/ WhatsApp (tz-aware, centavos, semana dom→sáb). Opt-out via Config `digest_diario_ativo`/`digest_semanal_ativo`.
 
 ## RLS / segurança
 - Camada 1 (ativa): todo repositório filtra por `tenantId` (`requireTenantId()`).
@@ -55,6 +56,7 @@
 ## Produção (EasyPanel, projeto `nina`) — NO AR
 - API `https://nina-api.rte6ms.easypanel.host/api/v1` · Front `https://nina-web.rte6ms.easypanel.host` · Postgres interno `nina_db`. Deploy por Dockerfile a partir do `main`. **Estado vivo + handoff em `.ai/STATE.md`.**
 - n8n (cérebro WhatsApp) ativo: workflow `Dqm3pJo2MNHcRZ1R`. Pendências: `OPENROUTER_API_KEY` no env da API; credenciais dos nós novos no n8n + Publish; RLS camada 2.
+- n8n **Digest** (SPEC-002): workflow `rob9zT99LztycoVp` (`Nina — Digest Matinal + Semanal`) — Schedule diário 7h45 seg-sex / semanal sexta 17h → `GET /resumo/*` → IF → Evolution sendText. Validado E2E em prod (2026-06-19). Doc: `n8n/workflows/nina-digest.md`. **Gotcha:** o nó IF criado via MCP vem `typeValidation: strict` e quebra boolean `is true` → usar `loose`+`looseTypeValidation`. Pendente: republish (fix do IF está no rascunho).
 
 ## Como rodar (dev)
 - Postgres: container Docker `evosec-pg` (5432). Backend: `cd backend && yarn start:dev` (usa `backend/.env`).
