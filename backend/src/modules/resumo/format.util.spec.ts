@@ -2,7 +2,7 @@ import {
   fmtData,
   fmtHora,
   fmtMoeda,
-  limitesDaJanela,
+  limitesDaSemana,
   limitesDoDia,
   seta,
   sparkline,
@@ -91,11 +91,12 @@ describe('datas tz-aware (America/Sao_Paulo = UTC-3)', () => {
     expect(fmtData(now, SP)).toBe('19/06');
   });
 
-  it('limitesDaJanela: 7 dias terminam no fim do dia local', () => {
-    const now = new Date('2026-06-19T12:00:00Z');
-    const { inicio, fim } = limitesDaJanela(now, SP, 7);
-    expect(fim.toISOString()).toBe('2026-06-20T03:00:00.000Z');
-    expect(inicio.toISOString()).toBe('2026-06-13T03:00:00.000Z');
+  it('limitesDaSemana: começa no domingo da semana local (sex 19/06 → dom 14/06)', () => {
+    const now = new Date('2026-06-19T12:00:00Z'); // sexta 19/06 (09h SP)
+    const { inicio, fim } = limitesDaSemana(now, SP);
+    expect(inicio.toISOString()).toBe('2026-06-14T03:00:00.000Z'); // domingo 14/06
+    expect(fim.toISOString()).toBe('2026-06-21T03:00:00.000Z'); // domingo seguinte
+    expect((fim.getTime() - inicio.getTime()) / 86_400_000).toBe(7);
   });
 
   it('fmtHora formata no fuso do tenant', () => {
