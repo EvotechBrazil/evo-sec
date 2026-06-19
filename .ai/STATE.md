@@ -38,5 +38,10 @@ Painel `https://easypanel.evotechsystem.cloud` (IP `72.61.57.251`, wildcard `*.r
 ## Histórico
 Sprints 1–4 (10 PRs): backend NestJS (auth dupla JWT + `x-service-token`, tenant, CRUD GTD, Agenda c/ recorrência, Financeiro, Finanças/coach, Custo), dashboard, n8n (prompts + filtro + multimodal). Deploy EasyPanel: PRs #16 (Dockerfile backend) e #17 (Dockerfile frontend).
 
+## SPECs
+- **SPEC-002** (implementada, PR aberto) — Digest matinal + semanal da Nina. `GET /resumo/diario|semanal` tenant-scoped (`ResumoModule` reusa Recados/Tarefas/Lembretes/Agenda/Financeiro services + `ResumoRepository` p/ VIPs/Config/Tenant). Resposta envelopada `{data:{ativo,numero,dia|inicio/fim,resumo,texto}}` — texto pronto p/ WhatsApp (truncado 2k diário / 4k semanal, tz-aware America/Sao_Paulo, moeda em centavos). Opt-out via Config `digest_diario_ativo`/`digest_semanal_ativo` (ausente=ativo); número = `Tenant.whatsapp_number` → **sem migração**. Helpers `format.util` (sparkline/seta/fmt/tz) portados da skill `relatorio-diario` (Bravy). Workflow n8n documentado em `n8n/workflows/nina-digest.md` (Schedule diário `45 7 * * 1-5` / semanal `0 17 * * 5` → HTTP → IF ativo → Evolution sendText).
+  - **Harness:** 22 testes unitários (helpers + service mockado + guarda de tenant no repo) + **E2E real** validado contra Postgres efêmero (vazio→"tudo em dia", populado→agenda/atrasado/vence-hoje, VIP-aguardando, opt-out→ativo:false, 401 sem auth, fuso e moeda corretos). Bug pego e corrigido no E2E: campo `data` colidia com o envelope do ResponseInterceptor → renomeado p/ `dia`.
+  - **Pendências de produção:** (1) preencher `Tenant.whatsapp_number` do Rodrigo (hoje null → digest não envia); (2) importar workflow n8n, selecionar credenciais (Nina API service token + Evolution) na UI e **Publish** (limitação MCP).
+
 ## Decisões (ADR)
 ADR-001 multi-tenant/RLS · ADR-002 modelos OpenRouter · ADR-003 gatilho · ADR-004 n8n-via-API · ADR-005 recorrência agenda · ADR-006 RLS camada 2 (role não-owner).

@@ -10,6 +10,7 @@ import { FinanceiroModule } from './modules/financeiro/financeiro.module';
 import { FinancasModule } from './modules/financas/financas.module';
 import { CustoModule } from './modules/custo/custo.module';
 import { NinaModule } from './modules/nina/nina.module';
+import { ResumoModule } from './modules/resumo/resumo.module';
 import { AuthMiddleware } from './common/auth/auth.middleware';
 
 /**
@@ -28,6 +29,7 @@ import { AuthMiddleware } from './common/auth/auth.middleware';
     FinancasModule,
     CustoModule,
     NinaModule,
+    ResumoModule,
   ],
   controllers: [HealthController],
 })
