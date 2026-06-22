@@ -1,5 +1,5 @@
 import { ContaStatus } from '@prisma/client';
-import { IsEnum, IsISO8601, IsInt, IsOptional, IsString, Min } from 'class-validator';
+import { IsEnum, IsISO8601, IsInt, IsOptional, IsString, IsUUID, Min } from 'class-validator';
 
 export class UpdateContaDto {
   @IsOptional()
@@ -9,6 +9,10 @@ export class UpdateContaDto {
   @IsOptional()
   @IsString()
   categoria?: string;
+
+  @IsOptional()
+  @IsUUID()
+  categoriaId?: string;
 
   @IsOptional()
   @IsInt()

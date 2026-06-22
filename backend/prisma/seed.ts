@@ -5,6 +5,7 @@
  */
 import { ModeloTarefa, PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { CATEGORIAS_PADRAO } from '../src/modules/categorias/categorias.constants';
 
 const prisma = new PrismaClient();
 
@@ -90,8 +91,24 @@ async function main(): Promise<void> {
     });
   }
 
+  for (const cat of CATEGORIAS_PADRAO) {
+    await prisma.categoria.upsert({
+      where: { tenantId_nome: { tenantId: tenant.id, nome: cat.nome } },
+      update: {},
+      create: {
+        tenantId: tenant.id,
+        nome: cat.nome,
+        tipo: cat.tipo,
+        grupoDre: cat.grupoDre,
+        isSystem: true,
+      },
+    });
+  }
+
   // eslint-disable-next-line no-console
-  console.log(`Seed OK — tenant ${tenant.id}, ${MODELOS.length} modelos, ${Object.keys(CONFIGS).length} configs.`);
+  console.log(
+    `Seed OK — tenant ${tenant.id}, ${MODELOS.length} modelos, ${Object.keys(CONFIGS).length} configs, ${CATEGORIAS_PADRAO.length} categorias.`,
+  );
 }
 
 main()

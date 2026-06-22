@@ -78,6 +78,27 @@ enum ContaStatus {
   ATRASADO
 }
 
+enum ContaOrigem {
+  AVULSO // movimentação de caixa do dia (nasce quitada)
+  TITULO // conta a pagar/receber com vencimento (nasce pendente)
+}
+
+enum CategoriaTipo {
+  RECEITA
+  DESPESA
+}
+
+// Natureza p/ DRE gerencial (ADR-007 · ref. docs/skills-contadores/39)
+enum GrupoDre {
+  VENDA
+  CUSTO_DIRETO
+  DESPESA_FIXA
+  PESSOAL
+  TRIBUTO
+  FINANCEIRO
+  EXTRAORDINARIA
+}
+
 enum MetaStatus {
   ATIVA
   CONCLUIDA
@@ -148,6 +169,7 @@ model Tenant {
   lembretes     Lembrete[]
   compromissos  Compromisso[]
   contas        Conta[]
+  categorias    Categoria[]
   metas         MetaFinanceira[]
   investimentos Investimento[]
   contatosVip   ContatoVip[]
@@ -283,6 +305,9 @@ model Conta {
   status        ContaStatus @default(PENDENTE)
   pagoEm        DateTime?   @map("pago_em")
   contraparte   String?
+  origem        ContaOrigem @default(TITULO)
+  categoriaId   String?     @map("categoria_id") @db.Uuid
+  categoriaRef  Categoria?  @relation(fields: [categoriaId], references: [id])
   createdAt     DateTime    @default(now()) @map("created_at")
   updatedAt     DateTime    @updatedAt @map("updated_at")
   deletedAt     DateTime?   @map("deleted_at")
@@ -290,7 +315,28 @@ model Conta {
   @@index([tenantId, status])
   @@index([tenantId, vencimento])
   @@index([tenantId, tipo])
+  @@index([tenantId, origem])
   @@map("contas")
+}
+
+// Plano de contas enxuto, tenant-scoped e editável (ADR-007). Seed marca isSystem.
+model Categoria {
+  id        String        @id @default(uuid()) @db.Uuid
+  tenantId  String        @map("tenant_id") @db.Uuid
+  tenant    Tenant        @relation(fields: [tenantId], references: [id])
+  nome      String
+  tipo      CategoriaTipo
+  grupoDre  GrupoDre      @map("grupo_dre")
+  isSystem  Boolean       @default(false) @map("is_system")
+  ativo     Boolean       @default(true)
+  contas    Conta[]
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+  deletedAt DateTime?     @map("deleted_at")
+
+  @@unique([tenantId, nome])
+  @@index([tenantId, tipo])
+  @@map("categorias")
 }
 
 // ───────────────────────────── Finanças (coach / pé de meia) ─────────────────────────────

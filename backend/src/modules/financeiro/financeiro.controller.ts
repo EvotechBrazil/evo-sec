@@ -12,9 +12,10 @@ import {
   Query,
 } from '@nestjs/common';
 import { Conta, ContaStatus, ContaTipo } from '@prisma/client';
-import { FinanceiroService, FluxoCaixa } from './financeiro.service';
+import { FinanceiroService, FluxoCaixa, ResumoFinanceiro } from './financeiro.service';
 import { CreateContaDto } from './dto/create-conta.dto';
 import { UpdateContaDto } from './dto/update-conta.dto';
+import { RegistrarMovimentacaoDto } from './dto/registrar-movimentacao.dto';
 
 @Controller('financeiro')
 export class FinanceiroController {
@@ -25,6 +26,12 @@ export class FinanceiroController {
     return this.financeiro.create(dto);
   }
 
+  /** Lançamento avulso de caixa (entrada/saída já realizada). */
+  @Post('movimentacoes')
+  registrarMovimentacao(@Body() dto: RegistrarMovimentacaoDto): Promise<Conta> {
+    return this.financeiro.registrarMovimentacao(dto);
+  }
+
   @Get('contas')
   list(
     @Query('tipo') tipo?: ContaTipo,
@@ -33,12 +40,19 @@ export class FinanceiroController {
     return this.financeiro.list(tipo, status);
   }
 
+  @Get('pendentes')
+  pendentes(@Query('tipo') tipo?: ContaTipo): Promise<Conta[]> {
+    return this.financeiro.pendentes(tipo);
+  }
+
   @Get('fluxo')
-  fluxo(
-    @Query('inicio') inicio?: string,
-    @Query('fim') fim?: string,
-  ): Promise<FluxoCaixa> {
+  fluxo(@Query('inicio') inicio?: string, @Query('fim') fim?: string): Promise<FluxoCaixa> {
     return this.financeiro.fluxoCaixa(inicio, fim);
+  }
+
+  @Get('resumo')
+  resumo(@Query('inicio') inicio?: string, @Query('fim') fim?: string): Promise<ResumoFinanceiro> {
+    return this.financeiro.resumo(inicio, fim);
   }
 
   @Get('vencimentos')
