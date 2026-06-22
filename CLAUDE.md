@@ -54,8 +54,8 @@
 - Multimodal (áudio/foto/doc): `n8n/workflows/nina-multimodal.md`.
 
 ## Produção (EasyPanel, projeto `nina`) — NO AR
-- API `https://nina-api.rte6ms.easypanel.host/api/v1` · Front `https://nina-web.rte6ms.easypanel.host` · Postgres interno `nina_db`. Deploy por Dockerfile a partir do `main`. **Estado vivo + handoff em `.ai/STATE.md`.**
-- n8n (cérebro WhatsApp) ativo: workflow `Dqm3pJo2MNHcRZ1R`. Pendências: `OPENROUTER_API_KEY` no env da API; credenciais dos nós novos no n8n + Publish; RLS camada 2.
+- API `https://nina-api.rte6ms.easypanel.host/api/v1` · Front `https://nina-web.rte6ms.easypanel.host` · Postgres interno: serviço `nina_db`, **database `nina`** (user `postgres`). Deploy por Dockerfile a partir do `main`. **Estado vivo + handoff em `.ai/STATE.md`.**
+- n8n (cérebro WhatsApp) ativo: workflow `Dqm3pJo2MNHcRZ1R`. `OPENROUTER_API_KEY` no env da API ✅ setada + redeploy (2026-06-19, voz `/falar` voltou). **Gotcha deploy:** env nova no EasyPanel só vale após **Deploy/Restart** do serviço (o adapter lê env no boot). Pendências: credenciais dos nós novos no n8n + Publish; RLS camada 2.
 - n8n **Digest** (SPEC-002): workflow `rob9zT99LztycoVp` (`Nina — Digest Matinal + Semanal`) — Schedule diário 7h45 seg-sex / semanal sexta 17h → `GET /resumo/*` → IF → Evolution sendText. Validado E2E em prod (2026-06-19). Doc: `n8n/workflows/nina-digest.md`. **Gotcha:** o nó IF criado via MCP vem `typeValidation: strict` e quebra boolean `is true` → usar `loose`+`looseTypeValidation`. Pendente: republish (fix do IF está no rascunho).
 
 ## Como rodar (dev)
