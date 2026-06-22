@@ -1,7 +1,9 @@
-# STATE — evo-sec (Nina)   (atualizado 2026-06-18 por Claude)
+# STATE — evo-sec (Nina)   (atualizado 2026-06-22 por Claude)
 
 ## Status atual
 **EM PRODUÇÃO no EasyPanel.** Sprints 1–4 concluídas + deploy completo + camada de tools do n8n (Nina persiste de verdade). Backend (GTD, Agenda, Financeiro, Finanças/coach, Custo), Dashboard (6 telas) e n8n rodando ponta a ponta, validados E2E por texto e áudio no WhatsApp.
+
+> **2026-06-22 — Reset de dados p/ teste full:** bancos **dev** (local Docker `evosec-pg`, zerado + re-seedado) e **prod** (`nina` @ VPS/EasyPanel) limpos — 12 tabelas de dados truncadas (`RESTART IDENTITY CASCADE`). Em prod, `tenants/users/modelos/configs` **preservados** (login + roteamento WhatsApp + modelos intactos); schema/migrations mantidos. Login owner inalterado.
 
 ### Produção (EasyPanel) — ✅ NO AR (2026-06-18)
 Painel `https://easypanel.evotechsystem.cloud` (IP `72.61.57.251`, wildcard `*.rte6ms.easypanel.host`). Projeto **`nina`**, 3 serviços:
@@ -30,7 +32,7 @@ Painel `https://easypanel.evotechsystem.cloud` (IP `72.61.57.251`, wildcard `*.r
 
 ## Roadmap restante (HANDOFF — retomar aqui)
 **Manual (não dá por código):**
-1. **`OPENROUTER_API_KEY`** no env do serviço `api` (EasyPanel) → redeploy. Sem ela `/nina/mensagem`=503 (voz no app não responde).
+1. ~~**`OPENROUTER_API_KEY`** no env do serviço `api` (EasyPanel) → redeploy.~~ ✅ **RESOLVIDO (2026-06-19):** chave setada no env do `api` + **redeploy** → `/nina/mensagem` voltou (orb da voz no app responde 200). ⚠️ Gotcha: o adapter lê o env **no boot** (`private readonly env = loadEnv()`), então adicionar a env no EasyPanel **só vale após Deploy/Restart** do serviço.
 2. **n8n — selecionar credencial + Publish** nos nós HTTP novos: `Listar metas`, `Aportar meta`, `Listar agenda`, `Cancelar compromisso`, `API: criar meta` → **Nina API service token**; `Baixar Midia` → **Evolution**; `Visao (Gemini)` → **OpenRouter account**.
 3. **Validar:** voz `/falar` (Chrome); pagar/aportar/cancelar com confirmação (WhatsApp); visão/OCR (foto).
 4. **Pré-prod:** rotacionar token EasyPanel + senha seed (via `/configuracoes`); **RLS camada 2** (ADR-006); CORS restrito; GO/NO-GO.
