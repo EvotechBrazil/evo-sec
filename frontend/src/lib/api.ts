@@ -84,10 +84,17 @@ export async function changePassword(senhaAtual: string, novaSenha: string): Pro
   await api.patch('/auth/senha', { senhaAtual, novaSenha });
 }
 
+export interface ConfirmacaoOpcao {
+  id: string;
+  label: string;
+  estilo: 'primario' | 'perigo' | 'neutro';
+}
+
 export interface NinaReply {
   resposta: string;
   acao: string;
   pendente?: Record<string, unknown> | null;
+  confirmacao?: { titulo: string; opcoes: ConfirmacaoOpcao[] } | null;
 }
 
 export async function ninaMensagem(
@@ -152,6 +159,61 @@ export async function fetchVencimentos(): Promise<Conta[]> {
   const { data } = await api.get<{ data: Conta[] }>('/financeiro/vencimentos', {
     params: { dias: 7 },
   });
+  return unwrap(data);
+}
+
+export interface Categoria {
+  id: string;
+  nome: string;
+  tipo: 'RECEITA' | 'DESPESA';
+  grupoDre: string;
+  isSystem: boolean;
+  ativo: boolean;
+}
+
+export async function fetchCategorias(): Promise<Categoria[]> {
+  const { data } = await api.get<{ data: Categoria[] }>('/categorias');
+  return unwrap(data);
+}
+
+export interface NovaMovimentacao {
+  tipo: 'ENTRADA' | 'SAIDA';
+  descricao: string;
+  valorCentavos: number;
+  categoriaId?: string;
+}
+
+/** Lançamento avulso de caixa (já realizado) — escreve direto via REST, sem WhatsApp. */
+export async function criarMovimentacao(m: NovaMovimentacao): Promise<Conta> {
+  const { data } = await api.post<{ data: Conta }>('/financeiro/movimentacoes', m);
+  return unwrap(data);
+}
+
+/** Dá baixa num título (marca como pago/recebido). */
+export async function baixarConta(id: string): Promise<Conta> {
+  const { data } = await api.post<{ data: Conta }>(`/financeiro/contas/${id}/pagar`, {});
+  return unwrap(data);
+}
+
+export interface LinhaResumo {
+  chave: string;
+  tipo: 'RECEITA' | 'DESPESA';
+  totalCentavos: number;
+}
+
+export interface ResumoFinanceiro {
+  periodo: { inicio: string; fim: string };
+  entradasCentavos: number;
+  saidasCentavos: number;
+  saldoCentavos: number;
+  aPagarPendenteCentavos: number;
+  aReceberPendenteCentavos: number;
+  porGrupoDre: LinhaResumo[];
+  porCategoria: LinhaResumo[];
+}
+
+export async function fetchResumo(): Promise<ResumoFinanceiro> {
+  const { data } = await api.get<{ data: ResumoFinanceiro }>('/financeiro/resumo');
   return unwrap(data);
 }
 

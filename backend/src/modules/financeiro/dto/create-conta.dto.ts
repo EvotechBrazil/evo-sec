@@ -1,10 +1,11 @@
-import { ContaTipo, Recorrencia } from '@prisma/client';
+import { ContaOrigem, ContaTipo, Recorrencia } from '@prisma/client';
 import {
   IsEnum,
   IsISO8601,
   IsInt,
   IsOptional,
   IsString,
+  IsUUID,
   MaxLength,
   Min,
   MinLength,
@@ -19,9 +20,14 @@ export class CreateContaDto {
   @MaxLength(500)
   descricao!: string;
 
+  /** Texto livre legado; preferir `categoriaId`. */
   @IsOptional()
   @IsString()
   categoria?: string;
+
+  @IsOptional()
+  @IsUUID()
+  categoriaId?: string;
 
   /** Dinheiro SEMPRE em centavos (inteiro). */
   @IsInt()
@@ -34,6 +40,11 @@ export class CreateContaDto {
   @IsOptional()
   @IsEnum(Recorrencia)
   recorrencia?: Recorrencia;
+
+  /** AVULSO (caixa) ou TITULO (com vencimento). Default no schema: TITULO. */
+  @IsOptional()
+  @IsEnum(ContaOrigem)
+  origem?: ContaOrigem;
 
   @IsOptional()
   @IsString()

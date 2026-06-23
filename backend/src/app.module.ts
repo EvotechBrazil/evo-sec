@@ -7,6 +7,7 @@ import { TarefasModule } from './modules/tarefas/tarefas.module';
 import { LembretesModule } from './modules/lembretes/lembretes.module';
 import { AgendaModule } from './modules/agenda/agenda.module';
 import { FinanceiroModule } from './modules/financeiro/financeiro.module';
+import { CategoriasModule } from './modules/categorias/categorias.module';
 import { FinancasModule } from './modules/financas/financas.module';
 import { CustoModule } from './modules/custo/custo.module';
 import { NinaModule } from './modules/nina/nina.module';
@@ -26,6 +27,7 @@ import { AuthMiddleware } from './common/auth/auth.middleware';
     LembretesModule,
     AgendaModule,
     FinanceiroModule,
+    CategoriasModule,
     FinancasModule,
     CustoModule,
     NinaModule,

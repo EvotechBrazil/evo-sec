@@ -1,7 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { Conta, ContaStatus, ContaTipo, Prisma } from '@prisma/client';
+import { Categoria, Conta, ContaStatus, ContaTipo, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { requireTenantId } from '../../common/tenant/tenant.util';
+
+export type ContaComCategoria = Conta & { categoriaRef: Categoria | null };
 
 @Injectable()
 export class FinanceiroRepository {
@@ -52,6 +54,47 @@ export class FinanceiroRepository {
       },
     });
     return agg._sum.valorCentavos ?? 0;
+  }
+
+  /** Soma de centavos em aberto (pendente/atrasado) por tipo — backlog de contas a pagar/receber. */
+  async somaPendentes(tipo: ContaTipo): Promise<number> {
+    const agg = await this.prisma.conta.aggregate({
+      _sum: { valorCentavos: true },
+      where: {
+        tenantId: requireTenantId(),
+        deletedAt: null,
+        tipo,
+        status: { in: [ContaStatus.PENDENTE, ContaStatus.ATRASADO] },
+      },
+    });
+    return agg._sum.valorCentavos ?? 0;
+  }
+
+  /** Contas quitadas no período, com a categoria carregada (base da DRE / breakdown). */
+  quitadasNoPeriodo(inicio: Date, fim: Date): Promise<ContaComCategoria[]> {
+    return this.prisma.conta.findMany({
+      where: {
+        tenantId: requireTenantId(),
+        deletedAt: null,
+        status: { in: [ContaStatus.PAGO, ContaStatus.RECEBIDO] },
+        pagoEm: { gte: inicio, lte: fim },
+      },
+      include: { categoriaRef: true },
+      orderBy: { pagoEm: 'desc' },
+    });
+  }
+
+  /** Contas em aberto (pendente/atrasado), opcionalmente por tipo. */
+  pendentes(tipo?: ContaTipo): Promise<Conta[]> {
+    return this.prisma.conta.findMany({
+      where: {
+        tenantId: requireTenantId(),
+        deletedAt: null,
+        status: { in: [ContaStatus.PENDENTE, ContaStatus.ATRASADO] },
+        ...(tipo ? { tipo } : {}),
+      },
+      orderBy: { vencimento: 'asc' },
+    });
   }
 
   /** Contas pendentes vencendo até `ate` (inclui vencidas). */

@@ -55,3 +55,7 @@ tmp/
 /nina-*.png
 /app-*.png
 *.tsbuildinfo
+
+# Skills de contador (ASV/Bravy) — licença "uso p/ clientes, não redistribuir"; referência local
+/docs/skills-contadores/
+/.claude/skills/[0-9][0-9]-*/
