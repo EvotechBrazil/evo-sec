@@ -195,6 +195,11 @@ export async function baixarConta(id: string): Promise<Conta> {
   return unwrap(data);
 }
 
+/** Exclui (soft delete) uma conta/título — corrige lançamentos errados sem WhatsApp. */
+export async function excluirConta(id: string): Promise<void> {
+  await api.delete(`/financeiro/contas/${id}`);
+}
+
 export interface LinhaResumo {
   chave: string;
   tipo: 'RECEITA' | 'DESPESA';

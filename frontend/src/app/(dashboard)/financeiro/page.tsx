@@ -9,6 +9,7 @@ import {
   fetchCategorias,
   criarMovimentacao,
   baixarConta,
+  excluirConta,
   reais,
   type Conta,
   type Categoria,
@@ -117,10 +118,14 @@ function ContaRow({
   c,
   onBaixar,
   baixando,
+  onExcluir,
+  excluindo,
 }: {
   c: Conta;
   onBaixar?: (id: string) => void;
   baixando?: boolean;
+  onExcluir?: (id: string) => void;
+  excluindo?: boolean;
 }) {
   const ehPagar = c.tipo === 'A_PAGAR';
   const pendente = c.status === 'PENDENTE' || c.status === 'ATRASADO';
@@ -147,6 +152,18 @@ function ContaRow({
             baixar
           </button>
         ) : null}
+        {onExcluir ? (
+          <button
+            type="button"
+            onClick={() => onExcluir(c.id)}
+            disabled={excluindo}
+            aria-label="Excluir conta"
+            title="Excluir"
+            className="rounded-lg bg-white/5 px-2 py-1 text-xs font-semibold text-neutral-400 ring-1 ring-white/10 transition hover:text-red-300 disabled:opacity-40"
+          >
+            excluir
+          </button>
+        ) : null}
       </div>
     </div>
   );
@@ -167,6 +184,21 @@ export default function FinanceiroPage() {
       qc.invalidateQueries({ queryKey: ['vencimentos'] });
     },
   });
+
+  const excluirMut = useMutation({
+    mutationFn: (id: string) => excluirConta(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['resumo'] });
+      qc.invalidateQueries({ queryKey: ['contas'] });
+      qc.invalidateQueries({ queryKey: ['vencimentos'] });
+    },
+  });
+
+  const pedirExcluir = (id: string) => {
+    if (typeof window !== 'undefined' && window.confirm('Excluir esta conta? Esta ação não pode ser desfeita.')) {
+      excluirMut.mutate(id);
+    }
+  };
 
   const lista = contas.data ?? [];
   const despesas = (resumo.data?.porCategoria ?? []).filter((l) => l.tipo === 'DESPESA');
@@ -208,7 +240,16 @@ export default function FinanceiroPage() {
         ) : (venc.data?.length ?? 0) === 0 ? (
           <EmptyState>Nada vencendo nos próximos 7 dias.</EmptyState>
         ) : (
-          venc.data?.map((c) => <ContaRow key={c.id} c={c} onBaixar={baixaMut.mutate} baixando={baixaMut.isPending} />)
+          venc.data?.map((c) => (
+            <ContaRow
+              key={c.id}
+              c={c}
+              onBaixar={baixaMut.mutate}
+              baixando={baixaMut.isPending}
+              onExcluir={pedirExcluir}
+              excluindo={excluirMut.isPending}
+            />
+          ))
         )}
       </Card>
 
@@ -219,7 +260,16 @@ export default function FinanceiroPage() {
         ) : lista.length === 0 ? (
           <EmptyState>Nenhuma conta cadastrada.</EmptyState>
         ) : (
-          lista.map((c) => <ContaRow key={c.id} c={c} onBaixar={baixaMut.mutate} baixando={baixaMut.isPending} />)
+          lista.map((c) => (
+            <ContaRow
+              key={c.id}
+              c={c}
+              onBaixar={baixaMut.mutate}
+              baixando={baixaMut.isPending}
+              onExcluir={pedirExcluir}
+              excluindo={excluirMut.isPending}
+            />
+          ))
         )}
       </Card>
     </div>
