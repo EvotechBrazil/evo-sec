@@ -27,6 +27,7 @@ Painel `https://easypanel.evotechsystem.cloud` (IP `72.61.57.251`, wildcard `*.r
 ### Cérebro na API + voz no app (2026-06-18, PR #20)
 - **`POST /api/v1/nina/mensagem`** {texto, pendente?} (JWT, tenant-scoped) — `NinaModule` (`OpenRouterAdapter` + `NinaService` reusando os services; services agora `exports`). Mesma lógica do n8n (intenção qwen → executa criar_* ou pede confirmação em pagar/aportar/cancelar), com **confirmação stateless** (API devolve `pendente`; cliente reenvia no "sim"). Requer **`OPENROUTER_API_KEY`** no env (senão 503).
 - **Voz ElevenLabs no app + fix resposta truncada (2026-06-23):** o orb `/falar` agora chama **`POST /nina/voz`** (novo, `ElevenLabsAdapter`) e toca a **MESMA voz do WhatsApp** (voice `gX4eTo1XOTTALJXnDro4`, `eleven_multilingual_v2`) — antes usava o TTS do navegador (voz do aparelho, vinha masculina). Fallback automático p/ navegador se a chave faltar/erro. Config via env `ELEVENLABS_API_KEY` (req.), `ELEVENLABS_VOICE_ID`/`ELEVENLABS_MODEL` (default = WhatsApp). Também subi `max_tokens` 700→2000 no `OpenRouterAdapter` (qwen3.7 gasta ~900 tokens em *reasoning* → o JSON vinha truncado/estranho na voz do app).
+- **Orb mais rápido (2026-06-23):** cérebro da API (orb `/falar`) trocado de `qwen/qwen3.7-max` (modelo de raciocínio, ~19s/resposta) p/ **`google/gemini-2.5-flash-lite`** (rápido + ~9x mais barato: $0,10/$0,40 vs $1,25/$3,75 por M tokens). É o novo default de `OPENROUTER_MODEL_INTER`; em prod, setar a env torna definitivo (caso exista override antigo). WhatsApp (n8n) segue no qwen — alinhar é opcional.
 - **Troca de senha:** `PATCH /auth/senha` (JWT) + tela `/configuracoes` + auto-logout em 401 (PRs #18/#19).
 
 ### Dashboard (2026-06-17/18) — tema mobile-first preto+amarelo, Archivo
@@ -34,7 +35,7 @@ Painel `https://easypanel.evotechsystem.cloud` (IP `72.61.57.251`, wildcard `*.r
 
 ## Roadmap restante (HANDOFF — retomar aqui)
 **Manual (não dá por código):**
-0. **NOVO (2026-06-23): `ELEVENLABS_API_KEY` no env do `api`** (EasyPanel) + redeploy → habilita a voz ElevenLabs no orb `/falar` (igual ao WhatsApp). Sem ela, o orb cai no TTS do navegador. `ELEVENLABS_VOICE_ID`/`ELEVENLABS_MODEL` já vêm com default = WhatsApp.
+0. **NOVO (2026-06-23): `ELEVENLABS_API_KEY` no env do `api`** (EasyPanel) + redeploy → habilita a voz ElevenLabs no orb `/falar` (igual ao WhatsApp). Sem ela, o orb cai no TTS do navegador. `ELEVENLABS_VOICE_ID`/`ELEVENLABS_MODEL` já vêm com default = WhatsApp. **Recomendado também:** setar **`OPENROUTER_MODEL_INTER=google/gemini-2.5-flash-lite`** (orb rápido/barato; se não setar, o novo default do código já vale).
 1. ~~**`OPENROUTER_API_KEY`** no env do serviço `api` (EasyPanel) → redeploy.~~ ✅ **RESOLVIDO (2026-06-19):** chave setada no env do `api` + **redeploy** → `/nina/mensagem` voltou (orb da voz no app responde 200). ⚠️ Gotcha: o adapter lê o env **no boot** (`private readonly env = loadEnv()`), então adicionar a env no EasyPanel **só vale após Deploy/Restart** do serviço.
 2. **n8n — selecionar credencial + Publish** nos nós HTTP novos: `Listar metas`, `Aportar meta`, `Listar agenda`, `Cancelar compromisso`, `API: criar meta` → **Nina API service token**; `Baixar Midia` → **Evolution**; `Visao (Gemini)` → **OpenRouter account**.
 3. **Validar:** voz `/falar` (Chrome); pagar/aportar/cancelar com confirmação (WhatsApp); visão/OCR (foto).
