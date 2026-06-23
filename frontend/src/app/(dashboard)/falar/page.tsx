@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { VoiceOrb } from '@/components/ui';
-import { ninaMensagem } from '@/lib/api';
+import { ninaMensagem, ninaVoz } from '@/lib/api';
 
 type Status = 'idle' | 'listening' | 'thinking' | 'speaking';
 
@@ -29,6 +29,7 @@ export default function FalarPage() {
   const [texto, setTexto] = useState('');
   const pendenteRef = useRef<Record<string, unknown> | null>(null);
   const recRef = useRef<SpeechRecognitionLike | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     const w = window as unknown as { SpeechRecognition?: SRConstructor; webkitSpeechRecognition?: SRConstructor };
@@ -51,11 +52,12 @@ export default function FalarPage() {
     return () => {
       try { rec.stop(); } catch { /* noop */ }
       window.speechSynthesis?.cancel();
+      audioRef.current?.pause();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function falar(txt: string) {
+  function falarNavegador(txt: string) {
     if (!window.speechSynthesis) { setStatus('idle'); return; }
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(txt);
@@ -63,6 +65,24 @@ export default function FalarPage() {
     u.onend = () => setStatus('idle');
     setStatus('speaking');
     window.speechSynthesis.speak(u);
+  }
+
+  // Voz da Nina = ElevenLabs (a MESMA do WhatsApp). Se a API não tiver a chave (503)
+  // ou falhar, cai no TTS do navegador pra não ficar muda.
+  async function falar(txt: string) {
+    setStatus('speaking');
+    try {
+      const { audioBase64, mime } = await ninaVoz(txt);
+      window.speechSynthesis?.cancel();
+      audioRef.current?.pause();
+      const audio = new Audio(`data:${mime};base64,${audioBase64}`);
+      audioRef.current = audio;
+      audio.onended = () => setStatus('idle');
+      audio.onerror = () => falarNavegador(txt);
+      await audio.play();
+    } catch {
+      falarNavegador(txt);
+    }
   }
 
   async function enviar(msg: string) {
@@ -85,6 +105,7 @@ export default function FalarPage() {
     if (status === 'listening') { recRef.current?.stop(); setStatus('idle'); return; }
     if (status === 'thinking') return;
     window.speechSynthesis?.cancel();
+    audioRef.current?.pause();
     setTranscript('');
     setReply('');
     setErro('');
