@@ -33,17 +33,20 @@
 - Coach de finanças = educativo/sugestivo, nunca executa nem é recomendação regulada.
 - Ações destrutivas → Human Review (n8n).
 
-## Modelos (OpenRouter, config-driven na tabela `Modelo`)
-- Fraco: `nvidia/nemotron-3.5-content-safety:free` (classificar + content-safety)
-- Intermediário: `qwen/qwen3.7-max`
-- Premium: `anthropic/claude-sonnet-4.6`
+## Modelos (OpenRouter, config-driven)
+- Fraco: `nvidia/nemotron-3.5-content-safety:free` (classificar + content-safety) · Premium: `anthropic/claude-sonnet-4.6`
+- **Cérebro WhatsApp (n8n):** `qwen/qwen3.7-max`. **Cérebro da API / orb `/falar`:** `google/gemini-2.5-flash-lite` (env `OPENROUTER_MODEL_INTER`; rápido+barato, thinking off — trocou o qwen que levava ~19s).
+- **Multimodal (visão/áudio):** `google/gemini-2.5-flash` (o `gemini-2.0-flash-001` foi **aposentado** pelo OpenRouter em 2026-06-23).
+- **Voz (TTS):** ElevenLabs `eleven_multilingual_v2`, voz `gX4eTo1XOTTALJXnDro4` — mesma no WhatsApp e no app (`POST /nina/voz`).
 
 ## API (rotas, base `/api/v1`) — todas tenant-scoped (JWT ou x-service-token+x-tenant-id)
 - `POST /auth/login` (público) · `PATCH /auth/senha` (troca de senha, JWT)
 - `POST /nina/mensagem` {texto, pendente?} — cérebro da Nina na API (NLU via OpenRouter → executa/confirma); usado pela voz do app (`/falar`). Requer `OPENROUTER_API_KEY`.
+- `POST /nina/voz` {texto} — TTS ElevenLabs (mesma voz do WhatsApp) p/ o orb `/falar`. Requer `ELEVENLABS_API_KEY` (senão 503 → app usa TTS do navegador como fallback).
 - `recados`, `tarefas`, `lembretes` — CRUD GTD
 - `agenda` — CRUD + `GET /agenda/disponibilidade` + `POST /agenda/:id/cancelar`
-- `financeiro/contas` — CRUD + `POST /financeiro/contas/:id/pagar` · `GET /financeiro/fluxo` · `GET /financeiro/vencimentos`
+- `financeiro/contas` — CRUD (+ `DELETE /financeiro/contas/:id` soft delete, "excluir" no app) + `POST /financeiro/contas/:id/pagar` · `GET /financeiro/fluxo` · `GET /financeiro/vencimentos`
+- **SPEC-003 (financeiro completo):** `POST /financeiro/movimentacoes` (lançamento avulso de caixa, nasce quitado) · `GET /financeiro/resumo` (saldo+DRE+breakdown) · `GET /financeiro/pendentes` · `categorias` (CRUD + `POST /categorias/garantir-padrao`). Modelagem ADR-007 (`Conta.origem AVULSO|TITULO`, saldo de fonte única, sem dobra).
 - `financas/metas` (+ `POST /:id/aportar`) · `financas/investimentos` · `GET /financas/evolucao` (coach educativo, com disclaimer)
 - `usos-llm` (POST registrar · GET listar · `GET /usos-llm/resumo`) — telemetria de custo (microdólares)
 - `GET /resumo/diario` (`?data`) · `GET /resumo/semanal` (`?inicio&?fim`) — **digest proativo** (SPEC-002): reusa os services, devolve `{data:{ativo,numero,dia|inicio/fim,resumo,texto}}` com texto pronto p/ WhatsApp (tz-aware, centavos, semana dom→sáb). Opt-out via Config `digest_diario_ativo`/`digest_semanal_ativo`.
@@ -55,7 +58,8 @@
 
 ## Produção (EasyPanel, projeto `nina`) — NO AR
 - API `https://nina-api.rte6ms.easypanel.host/api/v1` · Front `https://nina-web.rte6ms.easypanel.host` · Postgres interno: serviço `nina_db`, **database `nina`** (user `postgres`). Deploy por Dockerfile a partir do `main`. **Estado vivo + handoff em `.ai/STATE.md`.**
-- n8n (cérebro WhatsApp) ativo: workflow `Dqm3pJo2MNHcRZ1R`. `OPENROUTER_API_KEY` no env da API ✅ setada + redeploy (2026-06-19, voz `/falar` voltou). **Gotcha deploy:** env nova no EasyPanel só vale após **Deploy/Restart** do serviço (o adapter lê env no boot). Pendências: credenciais dos nós novos no n8n + Publish; RLS camada 2.
+- n8n (cérebro WhatsApp) ativo: workflow `Dqm3pJo2MNHcRZ1R` (43 nós, **SPEC-003 financeiro publicado** 2026-06-23). **Gotcha deploy:** env nova no EasyPanel só vale após **Deploy/Restart** do serviço (o adapter lê env no boot). Envs-chave: `OPENROUTER_API_KEY`, `ELEVENLABS_API_KEY`, `OPENROUTER_MODEL_INTER`. Pendência: RLS camada 2.
+- **SPEC-003 (financeiro) validado E2E em prod (2026-06-23)** + voz do orb `/falar` via ElevenLabs (igual WhatsApp). Detalhes/handoff em `.ai/STATE.md`.
 - n8n **Digest** (SPEC-002): workflow `rob9zT99LztycoVp` (`Nina — Digest Matinal + Semanal`) — Schedule diário 7h45 seg-sex / semanal sexta 17h → `GET /resumo/*` → IF → Evolution sendText. Validado E2E em prod (2026-06-19). Doc: `n8n/workflows/nina-digest.md`. **Gotcha:** o nó IF criado via MCP vem `typeValidation: strict` e quebra boolean `is true` → usar `loose`+`looseTypeValidation`. Pendente: republish (fix do IF está no rascunho).
 
 ## Como rodar (dev)

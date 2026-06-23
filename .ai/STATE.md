@@ -5,6 +5,8 @@
 
 > **2026-06-22 — Reset de dados p/ teste full:** bancos **dev** (local Docker `evosec-pg`, zerado + re-seedado) e **prod** (`nina` @ VPS/EasyPanel) limpos — 12 tabelas de dados truncadas (`RESTART IDENTITY CASCADE`). Em prod, `tenants/users/modelos/configs` **preservados** (login + roteamento WhatsApp + modelos intactos); schema/migrations mantidos. Login owner inalterado.
 
+> **2026-06-23 — Sessão (PRs #28–#32, na `main`):** SPEC-003 financeiro **validado E2E em prod** (saldo R$100 sem dobra); visão/áudio → `gemini-2.5-flash` (o `gemini-2.0-flash-001` foi aposentado pelo OpenRouter); voz do orb `/falar` → **ElevenLabs** (igual WhatsApp); cérebro da API → `gemini-2.5-flash-lite` (orb rápido/barato, era ~19s no qwen); botão **excluir** conta no app; `max_tokens` 700→2000. **Tiago fez o deploy** (envs `ELEVENLABS_API_KEY` + `OPENROUTER_MODEL_INTER` setadas; API confirmada no ar via probe `/nina/voz`→401). **Falta conferir (próxima sessão):** (1) self-chat "o que tenho a pagar" → confirmar pelos dados a exclusão dos 2 títulos de teste (`e14fe684` R$250 "Entrada" / `64916a23` R$150 "Mão de obra CLASSIC Du Cavalaro"); (2) 1 áudio → confirmar transcrição `gemini-2.5-flash`; (3) orb no app (não logável) — Tiago confere voz feminina + velocidade. Opcional: fazer o fluxo responder "só leio imagem/PDF" p/ zip/doc não-visual (hoje dá 400 na visão, ex. exec 569 = um `.zip`).
+
 ### Produção (EasyPanel) — ✅ NO AR (2026-06-18)
 Painel `https://easypanel.evotechsystem.cloud` (IP `72.61.57.251`, wildcard `*.rte6ms.easypanel.host`). Projeto **`nina`**, 3 serviços:
 - **`db`** — Postgres 16. Host interno: `nina_db:5432`, database `nina`, user `postgres`.
