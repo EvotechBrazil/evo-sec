@@ -45,7 +45,9 @@ export class OpenRouterAdapter {
       body: JSON.stringify({
         model: this.env.openrouterModel,
         temperature: 0.2,
-        max_tokens: 700,
+        // qwen3.7 é modelo de raciocínio: gasta ~900 tokens de "reasoning" antes do
+        // conteúdo. Com 700 o JSON vinha truncado → resposta estranha na voz do app.
+        max_tokens: 2000,
         messages: [
           { role: 'system', content: SYSTEM },
           { role: 'user', content: `Data atual (America/Sao_Paulo): ${nowIso} | Mensagem do Rodrigo: ${texto}` },

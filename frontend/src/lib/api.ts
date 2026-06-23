@@ -108,6 +108,17 @@ export async function ninaMensagem(
   return unwrap(data);
 }
 
+export interface VozResultado {
+  audioBase64: string;
+  mime: string;
+}
+
+/** TTS da Nina com a MESMA voz do WhatsApp (ElevenLabs). 503 se a chave não estiver no env da API. */
+export async function ninaVoz(texto: string): Promise<VozResultado> {
+  const { data } = await api.post<{ data: VozResultado }>('/nina/voz', { texto });
+  return unwrap(data);
+}
+
 export async function fetchRecados(): Promise<Recado[]> {
   const { data } = await api.get<{ data: Recado[] }>('/recados');
   return unwrap(data);

@@ -15,6 +15,9 @@ export interface AppEnv {
   serviceToken: string;
   openrouterApiKey: string;
   openrouterModel: string;
+  elevenlabsApiKey: string;
+  elevenlabsVoiceId: string;
+  elevenlabsModel: string;
 }
 
 const REQUIRED = [
@@ -46,5 +49,8 @@ export function loadEnv(): AppEnv {
     serviceToken: process.env.SERVICE_TOKEN as string,
     openrouterApiKey: process.env.OPENROUTER_API_KEY ?? '',
     openrouterModel: process.env.OPENROUTER_MODEL_INTER ?? 'qwen/qwen3.7-max',
+    elevenlabsApiKey: process.env.ELEVENLABS_API_KEY ?? '',
+    elevenlabsVoiceId: process.env.ELEVENLABS_VOICE_ID ?? 'gX4eTo1XOTTALJXnDro4',
+    elevenlabsModel: process.env.ELEVENLABS_MODEL ?? 'eleven_multilingual_v2',
   };
 }

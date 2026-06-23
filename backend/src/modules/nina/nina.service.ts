@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { CategoriaTipo, ContaTipo, Recorrencia } from '@prisma/client';
 import { OpenRouterAdapter } from './openrouter.adapter';
+import { ElevenLabsAdapter, VozResultado } from './elevenlabs.adapter';
 import { RecadosService } from '../recados/recados.service';
 import { TarefasService } from '../tarefas/tarefas.service';
 import { LembretesService } from '../lembretes/lembretes.service';
@@ -72,7 +73,13 @@ export class NinaService {
     private readonly financeiro: FinanceiroService,
     private readonly categorias: CategoriasService,
     private readonly financas: FinancasService,
+    private readonly voz: ElevenLabsAdapter,
   ) {}
+
+  /** Gera áudio (TTS ElevenLabs) de um texto — mesma voz do WhatsApp, p/ a voz do app (`/falar`). */
+  gerarVoz(texto: string): Promise<VozResultado> {
+    return this.voz.tts(texto);
+  }
 
   async processar(texto: string, pendente?: PendingAction | null): Promise<NinaReply> {
     // Confirmação de ação pendente (stateless: o cliente devolve `pendente` + o texto/botão clicado).
