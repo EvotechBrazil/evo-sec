@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ContaTipo, Recorrencia } from '@prisma/client';
+import { CategoriaTipo, ContaTipo, Recorrencia } from '@prisma/client';
 import { OpenRouterAdapter } from './openrouter.adapter';
 import { RecadosService } from '../recados/recados.service';
 import { TarefasService } from '../tarefas/tarefas.service';
@@ -142,7 +142,10 @@ export class NinaService {
     const valor = cents(dados.valorCentavos ?? dados.valor);
     const descricao = str(dados.descricao) ?? texto;
     if (!valor) return { resposta: 'Qual o valor dessa movimentação?', acao: 'registrar_movimentacao', pendente: null };
-    const cat = await this.categorias.resolverPorNome(str(dados.categoria) ?? descricao);
+    const cat = await this.categorias.resolverPorNome(
+      str(dados.categoria) ?? descricao,
+      isEntrada ? CategoriaTipo.RECEITA : CategoriaTipo.DESPESA,
+    );
     const label = isEntrada ? 'Entrada' : 'Saída';
     return {
       resposta: `Entendi: ${label} de ${reais(valor)}${cat ? ` · ${cat.nome}` : ''} — ${descricao}. Confirmo?`,
@@ -159,7 +162,10 @@ export class NinaService {
     const descricao = str(dados.descricao) ?? texto;
     if (!valor) return { resposta: 'Qual o valor da conta?', acao: 'criar_conta', pendente: null };
     const vencimento = str(dados.vencimento) ?? nowIso;
-    const cat = await this.categorias.resolverPorNome(str(dados.categoria) ?? descricao);
+    const cat = await this.categorias.resolverPorNome(
+      str(dados.categoria) ?? descricao,
+      tipo === ContaTipo.A_RECEBER ? CategoriaTipo.RECEITA : CategoriaTipo.DESPESA,
+    );
     const label = tipo === ContaTipo.A_RECEBER ? 'A receber' : 'A pagar';
     const venc = new Date(vencimento).toLocaleDateString('pt-BR');
     return {

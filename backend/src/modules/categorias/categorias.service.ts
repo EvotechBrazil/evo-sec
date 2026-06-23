@@ -1,5 +1,5 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { Categoria } from '@prisma/client';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { Categoria, CategoriaTipo, Prisma } from '@prisma/client';
 import { CategoriasRepository } from './categorias.repository';
 import { CreateCategoriaDto } from './dto/create-categoria.dto';
 import { UpdateCategoriaDto } from './dto/update-categoria.dto';
@@ -19,8 +19,15 @@ export class CategoriasService {
     return cat;
   }
 
-  create(dto: CreateCategoriaDto): Promise<Categoria> {
-    return this.repo.create({ ...dto, isSystem: false });
+  async create(dto: CreateCategoriaDto): Promise<Categoria> {
+    try {
+      return await this.repo.create({ ...dto, isSystem: false });
+    } catch (e) {
+      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+        throw new ConflictException('Já existe uma categoria com esse nome.');
+      }
+      throw e;
+    }
   }
 
   async update(id: string, dto: UpdateCategoriaDto): Promise<Categoria> {
@@ -38,9 +45,9 @@ export class CategoriasService {
    * Resolve uma categoria pelo nome aproximado (case-insensitive, match por conteúdo).
    * Usado pela Nina ao classificar um lançamento ("mão de obra" → "Mão de obra / serviços terceiros").
    */
-  async resolverPorNome(nome?: string): Promise<Categoria | null> {
+  async resolverPorNome(nome?: string, tipo?: CategoriaTipo): Promise<Categoria | null> {
     if (!nome) return null;
-    const todas = await this.repo.findMany({ ativo: true });
+    const todas = (await this.repo.findMany({ ativo: true })).filter((c) => !tipo || c.tipo === tipo);
     const alvo = nome.toLowerCase().trim();
     return (
       todas.find((c) => c.nome.toLowerCase() === alvo) ??
