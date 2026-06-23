@@ -50,6 +50,7 @@
 - `financas/metas` (+ `POST /:id/aportar`) · `financas/investimentos` · `GET /financas/evolucao` (coach educativo, com disclaimer)
 - `usos-llm` (POST registrar · GET listar · `GET /usos-llm/resumo`) — telemetria de custo (microdólares)
 - `GET /resumo/diario` (`?data`) · `GET /resumo/semanal` (`?inicio&?fim`) — **digest proativo** (SPEC-002): reusa os services, devolve `{data:{ativo,numero,dia|inicio/fim,resumo,texto}}` com texto pronto p/ WhatsApp (tz-aware, centavos, semana dom→sáb). Opt-out via Config `digest_diario_ativo`/`digest_semanal_ativo`.
+- **SPEC-004 (alertas proativos):** `GET /resumo/vencimentos` · `GET /resumo/aportes` · `GET /resumo/follow-ups` — alertas agendados (contas atrasadas/hoje/próximos · aporte/meta atrasada **com disclaimer** · follow-up "aguardando" GTD). Mesmo envelope + flag `temAlerta` (n8n só envia quando há o que avisar). Opt-out `alerta_vencimentos_ativo`/`alerta_aportes_ativo`/`alerta_aguardando_ativo`.
 
 ## RLS / segurança
 - Camada 1 (ativa): todo repositório filtra por `tenantId` (`requireTenantId()`).
@@ -61,6 +62,7 @@
 - n8n (cérebro WhatsApp) ativo: workflow `Dqm3pJo2MNHcRZ1R` (43 nós, **SPEC-003 financeiro publicado** 2026-06-23). **Gotcha deploy:** env nova no EasyPanel só vale após **Deploy/Restart** do serviço (o adapter lê env no boot). Envs-chave: `OPENROUTER_API_KEY`, `ELEVENLABS_API_KEY`, `OPENROUTER_MODEL_INTER`. Pendência: RLS camada 2.
 - **SPEC-003 (financeiro) validado E2E em prod (2026-06-23)** + voz do orb `/falar` via ElevenLabs (igual WhatsApp). Detalhes/handoff em `.ai/STATE.md`.
 - n8n **Digest** (SPEC-002): workflow `rob9zT99LztycoVp` (`Nina — Digest Matinal + Semanal`) — Schedule diário 7h45 seg-sex / semanal sexta 17h → `GET /resumo/*` → IF → Evolution sendText. Validado E2E em prod (2026-06-19). Doc: `n8n/workflows/nina-digest.md`. **Gotcha:** o nó IF criado via MCP vem `typeValidation: strict` e quebra boolean `is true` → usar `loose`+`looseTypeValidation`. Pendente: republish (fix do IF está no rascunho).
+- n8n **Alertas Proativos** (SPEC-004): workflow `b4gopjjyGKMrCJaP` (`Nina — Alertas Proativos`, 9 nós) — 3 Schedule (vencimentos diário 8h · aportes seg 9h · follow-ups seg-sex 8h30) → `GET /resumo/<x>` → IF (`ativo && temAlerta && numero`, `loose`) → Evolution sendText. **Publicado+ativado pelo Tiago 2026-06-23** (cred Evolution OK). Doc: `n8n/workflows/nina-alertas.md`. **Pendência:** cred "Nina API service token" no nó `Buscar Alerta` + **redeploy da API** (endpoints novos) p/ validar E2E.
 
 ## Como rodar (dev)
 - Postgres: container Docker `evosec-pg` (5432). Backend: `cd backend && yarn start:dev` (usa `backend/.env`).
