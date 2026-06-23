@@ -48,7 +48,9 @@ export function loadEnv(): AppEnv {
     encryptionKey: process.env.ENCRYPTION_KEY as string,
     serviceToken: process.env.SERVICE_TOKEN as string,
     openrouterApiKey: process.env.OPENROUTER_API_KEY ?? '',
-    openrouterModel: process.env.OPENROUTER_MODEL_INTER ?? 'qwen/qwen3.7-max',
+    // Cérebro da Nina na API (orb /falar): gemini-2.5-flash-lite é rápido (thinking off
+    // por padrão, sem os ~19s do qwen) e ~9x mais barato — bom p/ NLU/JSON estruturado.
+    openrouterModel: process.env.OPENROUTER_MODEL_INTER ?? 'google/gemini-2.5-flash-lite',
     elevenlabsApiKey: process.env.ELEVENLABS_API_KEY ?? '',
     elevenlabsVoiceId: process.env.ELEVENLABS_VOICE_ID ?? 'gX4eTo1XOTTALJXnDro4',
     elevenlabsModel: process.env.ELEVENLABS_MODEL ?? 'eleven_multilingual_v2',
