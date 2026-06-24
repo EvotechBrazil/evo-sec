@@ -57,6 +57,7 @@
 - Camada 1 (ativa): todo repositório filtra por `tenantId` (`requireTenantId()`).
 - Camada 2 (infra pronta): migração `rls_policies` habilitou RLS + política por tenant; enforcement total exige role não-owner (ver `.ai/ADR/ADR-006`).
 - Multimodal (áudio/foto/doc): `n8n/workflows/nina-multimodal.md`.
+- **Hardening (SPEC-008):** rate-limiting (`@nestjs/throttler` global, `TenantThrottlerGuard` keya por **tenant** quando autenticado / IP quando anônimo; `/auth/login` 5/min; health isento) + timeouts nos fetch externos (`fetchComTimeout`; env `LLM_TIMEOUT_MS`=15s, `TTS_TIMEOUT_MS`=12s) → falha externa vira 503, não pendura. **Premortem do sistema** (25 riscos) em `.ai/PREMORTEMS/PREMORTEM-sistema-2026-06-24.md`; release-blockers pendentes: webhook HMAC (#1), backup (#2), resiliência n8n (#3-n8n).
 
 ## Produção (EasyPanel, projeto `nina`) — NO AR
 - API `https://nina-api.rte6ms.easypanel.host/api/v1` · Front `https://nina-web.rte6ms.easypanel.host` · Postgres interno: serviço `nina_db`, **database `nina`** (user `postgres`). Deploy por Dockerfile a partir do `main`. **Estado vivo + handoff em `.ai/STATE.md`.**

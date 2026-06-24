@@ -1,5 +1,6 @@
 import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { loadEnv } from '../../config/env.config';
+import { fetchComTimeout } from '../../common/http/fetch-timeout.util';
 
 export interface VozResultado {
   audioBase64: string;
@@ -23,18 +24,27 @@ export class ElevenLabsAdapter {
     if (!this.configurado) {
       throw new ServiceUnavailableException('ELEVENLABS_API_KEY ausente — voz indisponível.');
     }
-    const res = await fetch(
-      `https://api.elevenlabs.io/v1/text-to-speech/${this.env.elevenlabsVoiceId}`,
-      {
-        method: 'POST',
-        headers: {
-          'xi-api-key': this.env.elevenlabsApiKey,
-          'Content-Type': 'application/json',
-          Accept: 'audio/mpeg',
+    let res: Response;
+    try {
+      // Timeout configurável (TTS_TIMEOUT_MS, default 12s — SPEC-008): em timeout/erro o fetch lança e cai no
+      // 503 abaixo — a voz do app já tem fallback p/ o TTS do navegador quando
+      // /nina/voz falha, então o teto de tempo apenas evita pendurar a request.
+      res = await fetchComTimeout(
+        `https://api.elevenlabs.io/v1/text-to-speech/${this.env.elevenlabsVoiceId}`,
+        {
+          method: 'POST',
+          headers: {
+            'xi-api-key': this.env.elevenlabsApiKey,
+            'Content-Type': 'application/json',
+            Accept: 'audio/mpeg',
+          },
+          body: JSON.stringify({ text: texto, model_id: this.env.elevenlabsModel }),
         },
-        body: JSON.stringify({ text: texto, model_id: this.env.elevenlabsModel }),
-      },
-    );
+        this.env.ttsTimeoutMs,
+      );
+    } catch {
+      throw new ServiceUnavailableException('ElevenLabs indisponível (timeout ou rede).');
+    }
     if (!res.ok) {
       throw new ServiceUnavailableException(`ElevenLabs respondeu ${res.status}.`);
     }

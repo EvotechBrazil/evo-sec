@@ -18,6 +18,8 @@ export interface AppEnv {
   elevenlabsApiKey: string;
   elevenlabsVoiceId: string;
   elevenlabsModel: string;
+  llmTimeoutMs: number;
+  ttsTimeoutMs: number;
 }
 
 const REQUIRED = [
@@ -54,5 +56,9 @@ export function loadEnv(): AppEnv {
     elevenlabsApiKey: process.env.ELEVENLABS_API_KEY ?? '',
     elevenlabsVoiceId: process.env.ELEVENLABS_VOICE_ID ?? 'gX4eTo1XOTTALJXnDro4',
     elevenlabsModel: process.env.ELEVENLABS_MODEL ?? 'eleven_multilingual_v2',
+    // Timeouts dos fetch externos (SPEC-008). Default folgado p/ não cortar resposta
+    // legítima do orb (gemini ~9s); ajustável por env sem redeploy de código.
+    llmTimeoutMs: Number(process.env.LLM_TIMEOUT_MS) || 15000,
+    ttsTimeoutMs: Number(process.env.TTS_TIMEOUT_MS) || 12000,
   };
 }

@@ -1,5 +1,6 @@
 import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { loadEnv } from '../../config/env.config';
+import { fetchComTimeout } from '../../common/http/fetch-timeout.util';
 import { ChatMsg } from './contexto.service';
 
 export interface IntentResult {
@@ -44,21 +45,32 @@ export class OpenRouterAdapter {
       ...(historico ?? []).map((h) => ({ role: h.role, content: h.conteudo })),
       { role: 'user', content: `Data atual (America/Sao_Paulo): ${nowIso} | Mensagem do Rodrigo: ${texto}` },
     ];
-    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.env.openrouterApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: this.env.openrouterModel,
-        temperature: 0.2,
-        // qwen3.7 é modelo de raciocínio: gasta ~900 tokens de "reasoning" antes do
-        // conteúdo. Com 700 o JSON vinha truncado → resposta estranha na voz do app.
-        max_tokens: 2000,
-        messages,
-      }),
-    });
+    let res: Response;
+    try {
+      // Timeout configurável (LLM_TIMEOUT_MS, default 15s — SPEC-008): sem teto, o
+      // fetch pendura /nina/mensagem ~5min. Em timeout/erro o fetch lança → 503.
+      res = await fetchComTimeout(
+        'https://openrouter.ai/api/v1/chat/completions',
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${this.env.openrouterApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: this.env.openrouterModel,
+            temperature: 0.2,
+            // qwen3.7 é modelo de raciocínio: gasta ~900 tokens de "reasoning" antes do
+            // conteúdo. Com 700 o JSON vinha truncado → resposta estranha na voz do app.
+            max_tokens: 2000,
+            messages,
+          }),
+        },
+        this.env.llmTimeoutMs,
+      );
+    } catch {
+      throw new ServiceUnavailableException('OpenRouter indisponível (timeout ou rede).');
+    }
     if (!res.ok) {
       throw new ServiceUnavailableException(`OpenRouter respondeu ${res.status}.`);
     }
