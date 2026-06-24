@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { CategoriaTipo, ContaTipo, Recorrencia } from '@prisma/client';
 import { OpenRouterAdapter } from './openrouter.adapter';
+import { ContextoService } from './contexto.service';
 import { ElevenLabsAdapter, VozResultado } from './elevenlabs.adapter';
 import { RecadosService } from '../recados/recados.service';
 import { TarefasService } from '../tarefas/tarefas.service';
@@ -66,6 +67,7 @@ const reais = (c: number): string =>
 export class NinaService {
   constructor(
     private readonly llm: OpenRouterAdapter,
+    private readonly contexto: ContextoService,
     private readonly recados: RecadosService,
     private readonly tarefas: TarefasService,
     private readonly lembretes: LembretesService,
@@ -91,8 +93,24 @@ export class NinaService {
     }
 
     const nowIso = new Date().toISOString();
-    const { acao, dados, resposta } = await this.llm.intent(texto, nowIso);
+    // Memória conversacional (SPEC-006): carrega o histórico da sessão ativa antes
+    // do NLU (best-effort — se falhar, segue sem contexto em vez de quebrar).
+    const historico = await this.contexto.historico().catch(() => []);
+    const { acao, dados, resposta } = await this.llm.intent(texto, nowIso, historico);
 
+    const reply = await this.executarNlu(acao, dados, resposta, texto, nowIso);
+    await this.registrarTurno(texto, reply.resposta);
+    return reply;
+  }
+
+  /** Roteia a intenção do LLM para a ação correspondente (extraído de `processar`). */
+  private async executarNlu(
+    acao: string,
+    dados: Record<string, unknown>,
+    resposta: string,
+    texto: string,
+    nowIso: string,
+  ): Promise<NinaReply> {
     try {
       switch (acao) {
         case 'criar_recado':
@@ -129,6 +147,16 @@ export class NinaService {
       }
     } catch (e) {
       return { resposta: 'Anotei aqui, mas tive um problema ao salvar. Pode repetir com mais detalhe?', acao };
+    }
+  }
+
+  /** Persiste o par user/assistant na memória (SPEC-006), best-effort. */
+  private async registrarTurno(texto: string, resposta: string): Promise<void> {
+    try {
+      await this.contexto.registrar('user', texto);
+      await this.contexto.registrar('assistant', resposta);
+    } catch {
+      // memória é best-effort: nunca quebra a resposta da Nina.
     }
   }
 

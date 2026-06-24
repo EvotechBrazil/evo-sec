@@ -1,5 +1,6 @@
 import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { loadEnv } from '../../config/env.config';
+import { ChatMsg } from './contexto.service';
 
 export interface IntentResult {
   acao: string;
@@ -32,10 +33,17 @@ export class OpenRouterAdapter {
     return Boolean(this.env.openrouterApiKey);
   }
 
-  async intent(texto: string, nowIso: string): Promise<IntentResult> {
+  async intent(texto: string, nowIso: string, historico?: ChatMsg[]): Promise<IntentResult> {
     if (!this.configurado) {
       throw new ServiceUnavailableException('OPENROUTER_API_KEY ausente — cérebro da Nina indisponível.');
     }
+    // Memória conversacional (SPEC-006): o histórico entra entre o system e a msg
+    // atual, na ordem cronológica, para dar contexto sem alterar o restante do prompt.
+    const messages = [
+      { role: 'system', content: SYSTEM },
+      ...(historico ?? []).map((h) => ({ role: h.role, content: h.conteudo })),
+      { role: 'user', content: `Data atual (America/Sao_Paulo): ${nowIso} | Mensagem do Rodrigo: ${texto}` },
+    ];
     const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -48,10 +56,7 @@ export class OpenRouterAdapter {
         // qwen3.7 é modelo de raciocínio: gasta ~900 tokens de "reasoning" antes do
         // conteúdo. Com 700 o JSON vinha truncado → resposta estranha na voz do app.
         max_tokens: 2000,
-        messages: [
-          { role: 'system', content: SYSTEM },
-          { role: 'user', content: `Data atual (America/Sao_Paulo): ${nowIso} | Mensagem do Rodrigo: ${texto}` },
-        ],
+        messages,
       }),
     });
     if (!res.ok) {

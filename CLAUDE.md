@@ -43,6 +43,7 @@
 - `POST /auth/login` (público) · `PATCH /auth/senha` (troca de senha, JWT)
 - `POST /nina/mensagem` {texto, pendente?} — cérebro da Nina na API (NLU via OpenRouter → executa/confirma); usado pela voz do app (`/falar`). Requer `OPENROUTER_API_KEY`.
 - `POST /nina/voz` {texto} — TTS ElevenLabs (mesma voz do WhatsApp) p/ o orb `/falar`. Requer `ELEVENLABS_API_KEY` (senão 503 → app usa TTS do navegador como fallback).
+- **SPEC-006 (memória durável):** `GET /nina/contexto?limite=N` · `POST /nina/contexto` {role, conteudo} — sessão ativa por tenant (janela 30min) + histórico em `Contexto`/`Sessao` (models antes órfãos, sem migração). A voz do app (`/nina/mensagem`) agora carrega o histórico → **multi-turno durável** (`OpenRouterAdapter.intent` aceita `historico?`). O cérebro WhatsApp (n8n) usa staticData hoje; pode migrar p/ cá.
 - `recados`, `tarefas`, `lembretes` — CRUD GTD
 - `agenda` — CRUD + `GET /agenda/disponibilidade` + `POST /agenda/:id/cancelar`
 - `financeiro/contas` — CRUD (+ `DELETE /financeiro/contas/:id` soft delete, "excluir" no app) + `POST /financeiro/contas/:id/pagar` · `GET /financeiro/fluxo` · `GET /financeiro/vencimentos`
