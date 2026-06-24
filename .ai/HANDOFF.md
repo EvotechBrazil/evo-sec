@@ -1,33 +1,22 @@
-# HANDOFF — evo-sec (Nina)   (2026-06-16 · De: Claude → Para: próxima sessão)
+# HANDOFF — evo-sec (Nina)   (2026-06-24 · De: Claude → próxima sessão)
 
 ## Onde paramos
-**Roadmap das 4 sprints CONCLUÍDO e testado (E2E + Playwright).** 10 PRs mergeados na `main` (`EvotechBrazil/evo-sec`).
-- Backend NestJS: GTD (recados/tarefas/lembretes), Agenda (disponibilidade + recorrência), Financeiro (contas/fluxo/vencimentos), Finanças/coach (metas/aportes/investimentos/evolução), Custo (usos-llm). Auth dupla (JWT + x-service-token), multi-tenant, migração+seed, RLS camada 2 migrada.
-- Dashboard Next.js: 6 telas (Início, Agenda, Aguardando, Financeiro, Pé de meia, Custo) + login.
-- n8n: prompts da Nina + filtro de gatilho + multimodal (artefatos/docs).
-- Governança: `.ai/` (STATE, MASTERPLAN, SPEC-001, ADR-001..006, PREMORTEMs, HARNESS por sprint).
+Sessão grande: **8 SPECs + premortem do sistema**, tudo na `main` e validado E2E em prod (PRs #34–#44). Estado vivo em `.ai/STATE.md` (bloco **🔖 PARADO AQUI** no topo) + `.ai/PREMORTEMS/PREMORTEM-sistema-2026-06-24.md` (25 riscos priorizados).
 
-## O que falta (próximos passos — em ordem)
-1. ~~**Workflow n8n vivo** na instância~~ ✅ **FEITO (2026-06-17)** — `Nina — Principal (WhatsApp)`, id `Dqm3pJo2MNHcRZ1R`, na instância `https://alicia-n8n.rte6ms.easypanel.host` (projeto `ScHAXN5Y8b3AwBfN`). Fonte: `n8n/workflows/nina-main.workflow.ts`. **Inativo** — faltam 3 passos manuais do Rodrigo para ir ao ar:
-   - (a) Nó **Nina (OpenRouter)**: selecionar credencial `OpenRouter account` (id `QSfQVD2ss2XVpPRB`) no dropdown.
-   - (b) Nó **Evolution sendText**: criar credencial `Evolution API (apikey)` (httpHeaderAuth header `apikey`) + trocar `EVOLUTION_HOST` pela URL real; apontar webhook do Evolution (`MESSAGES_UPSERT`) para `/webhook/nina`; **publicar**.
-   - (c) Iteração seguinte: camada de tools (orquestrador+especialistas → API NestJS `/api/v1`) — exige **API_BASE público** (n8n não alcança `localhost:3001`) + nós de transcrição/visão.
-2. **RLS camada 2** (enforcement total): role não-owner + SECURITY DEFINER no login (ver `.ai/ADR/ADR-006`).
-3. **Telas com gráficos** (recharts/Tremor) em Financeiro/Custo; CRON (briefing/vencimentos/aporte) no n8n.
-4. **Pré-deploy**: rodar checklist GO/NO-GO de `.ai/PREMORTEMS/PREMORTEM-producao.md`.
+Entregue nesta sessão: alertas proativos (004), cérebro multi-turno/memória (005), contexto durável (006), fix data/timezone do orb (007), hardening resiliência+rate-limit (008), Onda 1b backup+resiliência n8n (009).
 
-## Como retomar o ambiente local (amanhã)
-```bash
-# 1. Postgres (Docker) — se Docker Desktop não estiver aberto, abrir antes
-docker start evosec-pg
+## Release-blockers (Onda 1)
+- ✅ **#3 resiliência** — backend (deployado) + n8n (onError+fallback+timeout, no ar).
+- ✅ **#2 backup** — EasyPanel nativo, **diário 2h (LOCAL)**; falta **off-site** + testar restore.
+- ⏳ **#1 webhook HMAC** — **CRÍTICO, não feito** (SPEC-009 §5: nó fail-open → segredo → Evolution header → validar → flip fail-closed).
 
-# 2. Backend (porta 3001) — matar a porta antes evita servir build antigo
-cd e:/Projetos/Sec/backend && yarn start:dev
+## Continuar por (ordem)
+1. **#1 webhook** (segurança crítica, live-exploitable hoje).
+2. **Backup off-site** (Backblaze B2 grátis → destino no EasyPanel) + **testar restore** num clone.
+3. **Onda 2** do premortem: #6 lembrete recorrente (HOJE não dispara — quebrado), #8 tz financeiro, #9 idempotência webhook, #14 observabilidade + alerta de custo LLM. (Onda 3 = multi-tenant: #4/#5/#11.)
 
-# 3. Frontend (porta 3000)
-cd e:/Projetos/Sec/frontend && yarn dev
-# Login: rodrigo@crossfitarapongas.com.br  /  Nina@2026#troque
-```
+## Como trabalhamos (confirmado nesta sessão)
+SPEC primeiro → build com **agentes paralelos** (arquivos disjuntos) → **2 auditores por sprint** → Claude faz todo o git (branch→PR→merge). **Deploy:** Claude dispara o webhook do `api` no EasyPanel (Tiago tem o token). **n8n:** Claude edita via MCP, **Tiago publica** (e configura Evolution/EasyPanel). Ver [[tiago-modo-trabalho]] e [[n8n-mcp-fazer-tudo]].
 
-## Comando de retorno (cole no início da próxima sessão)
-> "Retomar o projeto evo-sec (Nina). Leia `.ai/HANDOFF.md`, `.ai/STATE.md` e o CLAUDE.md. Suba o ambiente (docker start evosec-pg + backend + frontend) e continue pelos próximos passos do HANDOFF — começando pelo workflow n8n vivo na instância."
+## Comando de retorno (cola no início da próxima sessão)
+> "Retomar evo-sec (Nina). Lê `.ai/STATE.md` (bloco 🔖 PARADO AQUI), `.ai/HANDOFF.md` e o premortem `.ai/PREMORTEMS/PREMORTEM-sistema-2026-06-24.md`. Continua: **#1 webhook HMAC** primeiro (crítico), depois **backup off-site** e a **Onda 2** (#6 lembrete recorrente etc.). Eu publico o n8n e configuro EasyPanel/Evolution; você faz o código/git e dispara o deploy."

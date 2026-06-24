@@ -1,4 +1,10 @@
-# STATE — evo-sec (Nina)   (atualizado 2026-06-23 por Claude)
+# STATE — evo-sec (Nina)   (atualizado 2026-06-24 por Claude)
+
+> ## 🔖 PARADO AQUI (2026-06-24) — RETOMAR
+> **Sessão gigante (8 SPECs + premortem do sistema), tudo na `main` e validado E2E em prod (PRs #34–#44):** SPEC-004 alertas proativos · 005 cérebro multi-turno (memória) · 006 contexto durável · 007 data/timezone do orb · 008 hardening (resiliência+rate-limit) · 009 Onda 1b. **Premortem com 25 riscos:** `.ai/PREMORTEMS/PREMORTEM-sistema-2026-06-24.md`.
+> **Release-blockers (Onda 1):** #3 resiliência **✅** (backend deployado + n8n no ar: onError+fallback+timeout) · #2 backup **✅ diário 2h no EasyPanel (LOCAL — falta off-site + testar restore)** · #1 webhook HMAC **⏳ NÃO feito (CRÍTICO)**.
+> **CONTINUAR AMANHÃ (ordem):** (1) **#1 webhook** (segurança crítica — nó fail-open→fail-closed + config Evolution; SPEC-009 §5); (2) backup **off-site** (Backblaze B2 grátis → destino no EasyPanel) + testar restore num clone; (3) **Onda 2** do premortem: #6 lembrete recorrente (feature quebrada), #8 tz financeiro, #9 idempotência, #14 observabilidade.
+> **Como:** Claude dispara deploy (webhook do `api`, Tiago tem o token) + edita n8n via MCP; **Tiago publica n8n + configura EasyPanel/Evolution**. Modelo do brain WhatsApp = `qwen/qwen3.7-plus`.
 
 ## Status atual
 **EM PRODUÇÃO no EasyPanel.** Sprints 1–4 concluídas + deploy completo + camada de tools do n8n (Nina persiste de verdade). Backend (GTD, Agenda, Financeiro, Finanças/coach, Custo), Dashboard (6 telas) e n8n rodando ponta a ponta, validados E2E por texto e áudio no WhatsApp.
