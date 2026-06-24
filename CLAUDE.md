@@ -41,7 +41,7 @@
 
 ## API (rotas, base `/api/v1`) — todas tenant-scoped (JWT ou x-service-token+x-tenant-id)
 - `POST /auth/login` (público) · `PATCH /auth/senha` (troca de senha, JWT)
-- `POST /nina/mensagem` {texto, pendente?} — cérebro da Nina na API (NLU via OpenRouter → executa/confirma); usado pela voz do app (`/falar`). Requer `OPENROUTER_API_KEY`.
+- `POST /nina/mensagem` {texto, pendente?} — cérebro da Nina na API (NLU via OpenRouter → executa/confirma); usado pela voz do app (`/falar`). Requer `OPENROUTER_API_KEY`. **SPEC-007:** datas em SP-local `-03:00` (util `common/datas/datas-br`) — corrige off-by-one do orb; pergunta data/hora quando falta (não chuta); exibição com `timeZone: America/Sao_Paulo`.
 - `POST /nina/voz` {texto} — TTS ElevenLabs (mesma voz do WhatsApp) p/ o orb `/falar`. Requer `ELEVENLABS_API_KEY` (senão 503 → app usa TTS do navegador como fallback).
 - **SPEC-006 (memória durável):** `GET /nina/contexto?limite=N` · `POST /nina/contexto` {role, conteudo} — sessão ativa por tenant (janela 30min) + histórico em `Contexto`/`Sessao` (models antes órfãos, sem migração). A voz do app (`/nina/mensagem`) agora carrega o histórico → **multi-turno durável** (`OpenRouterAdapter.intent` aceita `historico?`). O cérebro WhatsApp (n8n) usa staticData hoje; pode migrar p/ cá.
 - `recados`, `tarefas`, `lembretes` — CRUD GTD
