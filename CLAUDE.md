@@ -35,7 +35,7 @@
 
 ## Modelos (OpenRouter, config-driven)
 - Fraco: `nvidia/nemotron-3.5-content-safety:free` (classificar + content-safety) · Premium: `anthropic/claude-sonnet-4.6`
-- **Cérebro WhatsApp (n8n):** `qwen/qwen3.7-max`. **Cérebro da API / orb `/falar`:** `google/gemini-2.5-flash-lite` (env `OPENROUTER_MODEL_INTER`; rápido+barato, thinking off — trocou o qwen que levava ~19s).
+- **Cérebro WhatsApp (n8n):** `qwen/qwen3.7-plus` (mais barato e dá conta — decisão 2026-06-24; ADR-002 definiu `max` no plano original). **Cérebro da API / orb `/falar`:** `google/gemini-2.5-flash-lite` (env `OPENROUTER_MODEL_INTER`; rápido+barato, thinking off — trocou o qwen que levava ~19s).
 - **Multimodal (visão/áudio):** `google/gemini-2.5-flash` (o `gemini-2.0-flash-001` foi **aposentado** pelo OpenRouter em 2026-06-23).
 - **Voz (TTS):** ElevenLabs `eleven_multilingual_v2`, voz `gX4eTo1XOTTALJXnDro4` — mesma no WhatsApp e no app (`POST /nina/voz`).
 
