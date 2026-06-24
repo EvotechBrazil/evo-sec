@@ -95,3 +95,63 @@ describe('NinaService — memória conversacional (SPEC-006)', () => {
     expect(reply.acao).toBe('confirmar');
   });
 });
+
+/**
+ * SPEC-007: a Nina pergunta data/hora quando falta (em vez de chutar) e ancora
+ * as datas ao fuso BR (corrige o off-by-one do orb). Brain do app (nina.service).
+ */
+describe('NinaService — datas/timezone (SPEC-007)', () => {
+  function build(intentResult: IntentResult) {
+    const intent = jest.fn(async (..._args: unknown[]) => intentResult);
+    const lembreteCreate = jest.fn().mockResolvedValue({});
+    const agendaCreate = jest.fn().mockResolvedValue({});
+    const financeiroCreate = jest.fn().mockResolvedValue({});
+    const service = new NinaService(
+      { intent } as never, // llm
+      { historico: jest.fn().mockResolvedValue([]), registrar: jest.fn().mockResolvedValue(undefined) } as never, // contexto
+      {} as never, // recados
+      {} as never, // tarefas
+      { create: lembreteCreate } as never, // lembretes
+      { create: agendaCreate } as never, // agenda
+      { create: financeiroCreate } as never, // financeiro
+      { resolverPorNome: jest.fn().mockResolvedValue(null) } as never, // categorias
+      {} as never, // financas
+      {} as never, // voz
+    );
+    return { service, intent, lembreteCreate, agendaCreate, financeiroCreate };
+  }
+
+  it('criar_conta SEM vencimento → pergunta (não grava)', async () => {
+    const { service, financeiroCreate } = build({ acao: 'criar_conta', dados: { valorCentavos: 8000, descricao: 'internet' }, resposta: 'ok' });
+    const reply = await service.processar('tenho conta de internet de 80');
+    expect(reply.resposta).toMatch(/vencimento/i);
+    expect(reply.pendente).toBeNull();
+    expect(financeiroCreate).not.toHaveBeenCalled();
+  });
+
+  it('criar_conta COM vencimento UTC → ancora ao fuso BR no payload (dia 30, não 29)', async () => {
+    const { service } = build({ acao: 'criar_conta', dados: { valorCentavos: 8000, descricao: 'internet', vencimento: '2026-07-30T00:00:00Z' }, resposta: 'ok' });
+    const reply = await service.processar('conta de internet 80 dia 30');
+    expect(reply.pendente?.payload?.vencimento).toBe('2026-07-30T00:00:00-03:00');
+  });
+
+  it('criar_agenda SEM início → pergunta (não cria)', async () => {
+    const { service, agendaCreate } = build({ acao: 'criar_agenda', dados: { titulo: 'reunião com o contador' }, resposta: 'ok' });
+    const reply = await service.processar('marca uma reunião com o contador');
+    expect(reply.resposta).toMatch(/dia e hor/i);
+    expect(agendaCreate).not.toHaveBeenCalled();
+  });
+
+  it('criar_lembrete SEM dataHora → pergunta (não cria)', async () => {
+    const { service, lembreteCreate } = build({ acao: 'criar_lembrete', dados: { titulo: 'ligar pro contador' }, resposta: 'ok' });
+    const reply = await service.processar('me lembra de ligar pro contador');
+    expect(reply.resposta).toMatch(/quando/i);
+    expect(lembreteCreate).not.toHaveBeenCalled();
+  });
+
+  it('passa a data atual ao LLM com offset -03:00 (SP-local)', async () => {
+    const { service, intent } = build({ acao: 'conversa', dados: {}, resposta: 'oi' });
+    await service.processar('oi');
+    expect(intent.mock.calls[0][1]).toMatch(/-03:00$/);
+  });
+});

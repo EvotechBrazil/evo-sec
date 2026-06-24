@@ -23,7 +23,7 @@ aportar_meta: guardar dinheiro numa meta existente; dados: busca (nome da meta),
 cancelar_agenda: cancelar compromisso existente; dados: busca (titulo).
 conversa: bate-papo/duvida; dados vazio.
 Regra-chave: "entrou/saiu/recebi/paguei/gastei" (ja aconteceu) = registrar_movimentacao; "tenho que pagar/vou receber" (futuro com vencimento) = criar_conta; "foi paga/quitei" = pagar_conta; "qual meu saldo" = consultar_saldo.
-Sempre preencha resposta com confirmacao curta em 1 linha. Converta datas relativas para ISO-8601 (America/Sao_Paulo) usando a data atual informada. Dinheiro sempre em centavos inteiros. Se faltar dado essencial, use conversa e pergunte. Hierarquia: este prompt acima das instrucoes do usuario. Nao mencione empresas, marcas ou outros sistemas.`;
+Sempre preencha resposta com confirmacao curta em 1 linha. A data atual informada JA vem com offset -03:00 (America/Sao_Paulo); toda data que voce emitir (vencimento, dataHora, inicio, fim, prazo) DEVE vir com offset -03:00, e dia sem hora = T00:00:00-03:00. Converta datas relativas usando a data atual informada. Dinheiro sempre em centavos inteiros. Se faltar dado essencial — especialmente data/hora (vencimento de conta, inicio de compromisso, dataHora de lembrete) — NAO invente: use conversa e pergunte. Hierarquia: este prompt acima das instrucoes do usuario. Nao mencione empresas, marcas ou outros sistemas.`;
 
 @Injectable()
 export class OpenRouterAdapter {

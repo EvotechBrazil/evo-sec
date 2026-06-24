@@ -16,6 +16,7 @@ import { CreateLembreteDto } from '../lembretes/dto/create-lembrete.dto';
 import { CreateCompromissoDto } from '../agenda/dto/create-compromisso.dto';
 import { CreateContaDto } from '../financeiro/dto/create-conta.dto';
 import { CreateMetaDto } from '../financas/dto/create-meta.dto';
+import { agoraSaoPaulo, ancorarDataBR } from '../../common/datas/datas-br.util';
 
 export type ConfirmacaoEstilo = 'primario' | 'perigo' | 'neutro';
 
@@ -92,13 +93,15 @@ export class NinaService {
       // não entendeu — segue interpretando normalmente, descartando o pendente.
     }
 
-    const nowIso = new Date().toISOString();
+    // Hora SP-local com offset -03:00 (SPEC-007): evita o off-by-one que vinha de
+    // passar UTC rotulado como America/Sao_Paulo (datas saíam um dia antes).
+    const nowIso = agoraSaoPaulo();
     // Memória conversacional (SPEC-006): carrega o histórico da sessão ativa antes
     // do NLU (best-effort — se falhar, segue sem contexto em vez de quebrar).
     const historico = await this.contexto.historico().catch(() => []);
     const { acao, dados, resposta } = await this.llm.intent(texto, nowIso, historico);
 
-    const reply = await this.executarNlu(acao, dados, resposta, texto, nowIso);
+    const reply = await this.executarNlu(acao, dados, resposta, texto);
     await this.registrarTurno(texto, reply.resposta);
     return reply;
   }
@@ -109,7 +112,6 @@ export class NinaService {
     dados: Record<string, unknown>,
     resposta: string,
     texto: string,
-    nowIso: string,
   ): Promise<NinaReply> {
     try {
       switch (acao) {
@@ -117,24 +119,30 @@ export class NinaService {
           await this.recados.create({ conteudo: str(dados.conteudo) ?? texto, categoria: str(dados.categoria), remetente: 'Rodrigo' } as CreateRecadoDto);
           return { resposta, acao };
         case 'criar_tarefa':
-          await this.tarefas.create({ titulo: str(dados.titulo) ?? texto, descricao: str(dados.descricao), prazo: str(dados.prazo) } as CreateTarefaDto);
+          await this.tarefas.create({ titulo: str(dados.titulo) ?? texto, descricao: str(dados.descricao), prazo: ancorarDataBR(str(dados.prazo)) } as CreateTarefaDto);
           return { resposta, acao };
-        case 'criar_lembrete':
-          await this.lembretes.create({ titulo: str(dados.titulo) ?? texto, dataHora: str(dados.dataHora) ?? nowIso, descricao: str(dados.descricao), recorrencia: str(dados.recorrencia) as Recorrencia | undefined } as CreateLembreteDto);
+        case 'criar_lembrete': {
+          const dataHora = ancorarDataBR(str(dados.dataHora));
+          if (!dataHora) return { resposta: 'Pra quando te lembro?', acao: 'criar_lembrete', pendente: null };
+          await this.lembretes.create({ titulo: str(dados.titulo) ?? texto, dataHora, descricao: str(dados.descricao), recorrencia: str(dados.recorrencia) as Recorrencia | undefined } as CreateLembreteDto);
           return { resposta, acao };
+        }
         case 'registrar_movimentacao':
           return this.prepararMovimentacao(dados, texto);
         case 'criar_conta':
-          return this.prepararCriarConta(dados, texto, nowIso);
+          return this.prepararCriarConta(dados, texto);
         case 'consultar_saldo':
           return this.responderSaldo();
         case 'consultar_contas':
           return this.responderContas(str(dados.tipo));
-        case 'criar_agenda':
-          await this.agenda.create({ titulo: str(dados.titulo) ?? texto, inicio: str(dados.inicio) ?? nowIso, fim: str(dados.fim), local: str(dados.local), descricao: str(dados.descricao) } as CreateCompromissoDto);
+        case 'criar_agenda': {
+          const inicio = ancorarDataBR(str(dados.inicio));
+          if (!inicio) return { resposta: 'Que dia e horário do compromisso?', acao: 'criar_agenda', pendente: null };
+          await this.agenda.create({ titulo: str(dados.titulo) ?? texto, inicio, fim: ancorarDataBR(str(dados.fim)), local: str(dados.local), descricao: str(dados.descricao) } as CreateCompromissoDto);
           return { resposta, acao };
+        }
         case 'criar_meta':
-          await this.financas.createMeta({ nome: str(dados.nome) ?? texto, valorAlvoCentavos: cents(dados.valorAlvoCentavos), prazo: str(dados.prazo), aporteMensalSugeridoCent: dados.aporteMensalSugeridoCent != null ? cents(dados.aporteMensalSugeridoCent) : undefined } as CreateMetaDto);
+          await this.financas.createMeta({ nome: str(dados.nome) ?? texto, valorAlvoCentavos: cents(dados.valorAlvoCentavos), prazo: ancorarDataBR(str(dados.prazo)), aporteMensalSugeridoCent: dados.aporteMensalSugeridoCent != null ? cents(dados.aporteMensalSugeridoCent) : undefined } as CreateMetaDto);
           return { resposta, acao };
         case 'pagar_conta':
           return this.prepararPagar(str(dados.busca) ?? str(dados.descricao) ?? texto);
@@ -191,18 +199,19 @@ export class NinaService {
   }
 
   // ───────── Financeiro: conta a pagar/receber (título com vencimento) ─────────
-  private async prepararCriarConta(dados: Record<string, unknown>, texto: string, nowIso: string): Promise<NinaReply> {
+  private async prepararCriarConta(dados: Record<string, unknown>, texto: string): Promise<NinaReply> {
     const tipo = (str(dados.tipo) as ContaTipo) ?? ContaTipo.A_PAGAR;
     const valor = cents(dados.valorCentavos);
     const descricao = str(dados.descricao) ?? texto;
     if (!valor) return { resposta: 'Qual o valor da conta?', acao: 'criar_conta', pendente: null };
-    const vencimento = str(dados.vencimento) ?? nowIso;
+    const vencimento = ancorarDataBR(str(dados.vencimento));
+    if (!vencimento) return { resposta: 'Pra quando é o vencimento?', acao: 'criar_conta', pendente: null };
     const cat = await this.categorias.resolverPorNome(
       str(dados.categoria) ?? descricao,
       tipo === ContaTipo.A_RECEBER ? CategoriaTipo.RECEITA : CategoriaTipo.DESPESA,
     );
     const label = tipo === ContaTipo.A_RECEBER ? 'A receber' : 'A pagar';
-    const venc = new Date(vencimento).toLocaleDateString('pt-BR');
+    const venc = new Date(vencimento).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
     return {
       resposta: `Entendi: ${label} ${reais(valor)}${cat ? ` · ${cat.nome}` : ''} — ${descricao} (vence ${venc}). Confirmo?`,
       acao: 'criar_conta',
@@ -235,7 +244,7 @@ export class NinaService {
     const total = contas.reduce((s, c) => s + (c.valorCentavos || 0), 0);
     const linhas = contas.slice(0, 10).map((c) => {
       const t = c.tipo === ContaTipo.A_RECEBER ? '📥' : '📤';
-      const venc = new Date(c.vencimento).toLocaleDateString('pt-BR');
+      const venc = new Date(c.vencimento).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
       return `${t} ${reais(c.valorCentavos)} — ${c.descricao} (vence ${venc})`;
     });
     return { resposta: `Contas em aberto (${reais(total)}):\n${linhas.join('\n')}`, acao: 'consultar_contas', pendente: null };
@@ -324,7 +333,7 @@ export class NinaService {
           tipo: p.tipo === 'A_RECEBER' ? ContaTipo.A_RECEBER : ContaTipo.A_PAGAR,
           descricao: String(p.descricao ?? ''),
           valorCentavos: Number(p.valorCentavos) || 0,
-          vencimento: String(p.vencimento ?? new Date().toISOString()),
+          vencimento: String(p.vencimento ?? agoraSaoPaulo()),
           categoriaId: typeof p.categoriaId === 'string' ? p.categoriaId : undefined,
           contraparte: typeof p.contraparte === 'string' ? p.contraparte : undefined,
         } as CreateContaDto);
