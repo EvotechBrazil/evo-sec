@@ -23,6 +23,8 @@ export class AuthService {
   ) {}
 
   async login(email: string, password: string): Promise<AuthTokens> {
+    // SPEC-015 #11: com email globalmente único (schema), findFirst({ email })
+    // resolve no máximo 1 conta → login determinístico (não depende do tenant).
     const user = await this.prisma.user.findFirst({
       where: { email, deletedAt: null },
     });
@@ -46,6 +48,28 @@ export class AuthService {
     const passwordHash = await bcrypt.hash(novaSenha, 10);
     await this.prisma.user.update({ where: { id: user.id }, data: { passwordHash } });
     return { ok: true };
+  }
+
+  /**
+   * SPEC-015 §6 (#18): renova o access silenciosamente a partir de um refresh
+   * válido, reemitindo um par novo (rotação simples). Em qualquer falha de verify
+   * (assinatura/expiração) → 401. Sem denylist/jti aqui — revogação de refresh
+   * (logout server-side, reuse-detection) fica como follow-up.
+   */
+  async refresh(refreshToken: string): Promise<AuthTokens> {
+    let sub: string;
+    let tenantId: string;
+    try {
+      const payload = await this.jwt.verifyAsync<{ sub: string; tenantId: string }>(
+        refreshToken,
+        { secret: this.env.jwtRefreshSecret },
+      );
+      sub = payload.sub;
+      tenantId = payload.tenantId;
+    } catch {
+      throw new UnauthorizedException('Refresh token inválido ou expirado.');
+    }
+    return this.issueTokens(sub, tenantId);
   }
 
   private async issueTokens(sub: string, tenantId: string): Promise<AuthTokens> {

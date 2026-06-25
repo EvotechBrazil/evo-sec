@@ -2,6 +2,7 @@ import { Body, Controller, HttpCode, HttpStatus, Patch, Post } from '@nestjs/com
 import { Throttle } from '@nestjs/throttler';
 import { AuthService, AuthTokens } from './auth.service';
 import { LoginDto } from './dto/login.dto';
+import { RefreshDto } from './dto/refresh.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { requireUserId } from '../../common/tenant/tenant.util';
 
@@ -16,6 +17,15 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   login(@Body() dto: LoginDto): Promise<AuthTokens> {
     return this.authService.login(dto.email, dto.password);
+  }
+
+  // Renova o access a partir de um refresh válido (SPEC-015 §6). Anônimo: o
+  // front chama quando o access já expirou (401) — por isso PRECISA ficar FORA
+  // do AuthMiddleware no app.module (como /auth/login), senão o middleware barra.
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  refresh(@Body() dto: RefreshDto): Promise<AuthTokens> {
+    return this.authService.refresh(dto.refreshToken);
   }
 
   @Patch('senha')
