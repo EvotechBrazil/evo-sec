@@ -1,7 +1,7 @@
 # Nina — Multi-tenant no n8n (SPEC-016, slice 16B — design)
 
-> **Design — NÃO aplicado no n8n.** O integrador (Claude) aplica via MCP nos *drafts* dos
-> workflows; **Tiago publica**. Este doc só desenha os nós/expressões.
+> **Parte 1 (brain) APLICADA no draft (2026-06-25)** via MCP — **pendente Tiago: anexar credencial + publicar**.
+> **Parte 2 (crons) ADIADA** (ver "Status da aplicação" abaixo). Este doc desenha os nós/expressões.
 >
 > Fecha o achado **#5** do `PREMORTEM-sistema-2026-06-24.md`: `x-tenant-id`, `TENANT_ID` e
 > `OWN_NUMBER` estão **hardcoded** em todos os workflows. No **2º tenant**, mensagem de qualquer
@@ -26,6 +26,44 @@
 Com **1 tenant** cadastrado (estado atual): o `resolver` devolve **o mesmo** tenant de hoje
 (`00000000-…-0001`, pelo `whatsappNumber`); o loop dos crons roda **1 vez**. Comportamento idêntico
 ao atual — a mudança só "acorda" quando entra o 2º tenant. Nenhuma migração de dado.
+
+---
+
+## Status da aplicação (2026-06-25)
+
+### ✅ Parte 1 — Brain (`Dqm3pJo2MNHcRZ1R`) — APLICADA no draft (47 nós, **não publicado**)
+- Nó **`Resolver Tenant`** (httpRequest v4.4) inserido **entre `Filtro de Gatilho (isolamento)` e
+  `Roteia (texto / midia / pronta)`** (eram 1:1; agora `Filtro → Resolver Tenant → Roteia`, caminho
+  único, sem duplicação). GET `…/tenants/resolver?numero={{ $json.numero }}`, `httpHeaderAuth`,
+  `options.timeout: 5000`, **`onError: continueRegularOutput`**.
+- **15 nós** `x-tenant-id` (não 11 — o vivo tinha `Listar contas`, `Pagar conta`, `API: resumo`,
+  `API: pendentes` a mais) trocados de literal → expressão **com fallback**:
+  `={{ ($('Resolver Tenant').first().json.data || {}).tenantId || '00000000-0000-0000-0000-000000000001' }}`.
+- **Decisão: variante RESILIENTE em vez do design estrito (404→encerra).** O brain é o secretário VIVO;
+  não pode virar dependência dura do resolver. Com `onError: continueRegularOutput` + fallback ao
+  literal #1: mono-tenant resolve #1; se o resolver cair/sem-credencial → cai no #1 e **o brain nunca
+  quebra** (inclusive se publicar antes de anexar a credencial). **No 2º tenant: trocar para estrito**
+  (remover o `|| '…0001'` e usar IF `Tenant resolvido?`/`onError: stopWorkflow`) para não vazar p/ #1.
+- **`OWN_NUMBER`** (gate self-chat no Filtro) **mantido** (§1.5) — segurança crítica inalterada.
+
+**Gotcha do MCP `update_workflow` (registrar p/ próximas cirurgias):** o `path` do `setNodeParameter`
+é **relativo a `node.parameters`** (não à raiz) e **não desce em arrays** (`cannot descend into
+non-object`). Tentar `setNodeParameter /parameters/headerParameters/parameters/0/value` cria um **blob
+órfão** `node.parameters.parameters` (ignorado pelo n8n, mas o header fica literal). **Para trocar valor
+em array de parâmetros use `updateNodeParameters` (merge, `replace:false`)** passando o array inteiro
+(`{headerParameters:{parameters:[{name,value}]}}`) — o merge sobrescreve por índice. Para limpar uma
+chave: `setNodeParameter` com `path:'/<chave>'` e `value:null`.
+
+**Pendente Tiago (brain):** 1) anexar a credencial **"Nina API service token"** (`106lKMqNprmKFB1k`) no
+nó `Resolver Tenant` (não persiste via MCP). 2) **Publicar**. 3) Validar: "nina ping" do dono → na
+execução, `Resolver Tenant` retorna 200 e os nós API mandam `x-tenant-id` = o tenant resolvido.
+
+### ⏸️ Parte 2 — Crons — ADIADA (continua design abaixo)
+Motivo: em **mono-tenant o loop roda 1×** = comportamento idêntico ao de hoje → **a lógica multi-tenant
+não é validável com 1 tenant** (não dá pra distinguir certo de errado). Reescrever 3 crons que
+**funcionam** (Split/Loop) adiciona risco **sem benefício atual**. **Aplicar no onboarding do 2º
+tenant**, quando o loop passa a ter 2 iterações e fica testável (cada tenant recebe o seu). O design
+(Parte 2) está pronto p/ aplicar nessa hora.
 
 ---
 
