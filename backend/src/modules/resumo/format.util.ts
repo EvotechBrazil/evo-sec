@@ -134,6 +134,32 @@ export function limitesDaSemana(now: Date, tz: string): { inicio: Date; fim: Dat
   return { inicio, fim };
 }
 
+/**
+ * Janela [1º do mês 00:00, 1º do mês seguinte 00:00) do mês local (no tz do tenant) que
+ * contém `now`, retornada como instantes UTC. Use para o resumo/DRE mensal do financeiro.
+ */
+export function limitesDoMes(now: Date, tz: string): { inicio: Date; fim: Date } {
+  const p = partsInTz(now, tz);
+  const offset = tzOffsetMs(now, tz);
+  const inicio = new Date(Date.UTC(p.year, p.month - 1, 1, 0, 0, 0) - offset);
+  // p.month (1-based) como índice 0-based = mês seguinte; Date.UTC rola dez→jan automaticamente.
+  const fim = new Date(Date.UTC(p.year, p.month, 1, 0, 0, 0) - offset);
+  return { inicio, fim };
+}
+
+/**
+ * Normaliza uma data **date-only** (`YYYY-MM-DD`) para o **meio-dia local** do tenant (instante
+ * UTC). Meio-dia evita off-by-one nos dois sentidos ao persistir/exibir. Strings com hora/offset
+ * passam direto (`new Date(iso)`). Use antes de gravar `vencimento`/`data` no financeiro.
+ */
+export function ancorarDataOnly(iso: string, tz: string): Date {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso.trim());
+  if (!m) return new Date(iso);
+  const guess = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 12, 0, 0));
+  const offset = tzOffsetMs(guess, tz);
+  return new Date(guess.getTime() - offset);
+}
+
 /** "24/05" no tz do tenant. */
 export function fmtData(date: Date, tz: string): string {
   const p = partsInTz(date, tz);

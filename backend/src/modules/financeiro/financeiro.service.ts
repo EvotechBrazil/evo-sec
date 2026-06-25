@@ -11,6 +11,7 @@ import { FinanceiroRepository } from './financeiro.repository';
 import { CreateContaDto } from './dto/create-conta.dto';
 import { UpdateContaDto } from './dto/update-conta.dto';
 import { RegistrarMovimentacaoDto } from './dto/registrar-movimentacao.dto';
+import { ancorarDataOnly, limitesDoDia, limitesDoMes } from '../resumo/format.util';
 
 export interface FluxoCaixa {
   entradasCentavos: number;
@@ -39,8 +40,10 @@ export interface ResumoFinanceiro {
 export class FinanceiroService {
   constructor(private readonly repo: FinanceiroRepository) {}
 
-  create(dto: CreateContaDto): Promise<Conta> {
-    return this.repo.create(dto);
+  async create(dto: CreateContaDto): Promise<Conta> {
+    const tz = await this.repo.tenantTimezone();
+    // Ancora `vencimento` date-only ao meio-dia local → não cai -1 dia no fuso (SPEC-011).
+    return this.repo.create({ ...dto, vencimento: ancorarDataOnly(dto.vencimento, tz) });
   }
 
   /**
@@ -48,11 +51,13 @@ export class FinanceiroService {
    * Nasce quitada (origem AVULSO, status RECEBIDO/PAGO, pagoEm=data) e entra no saldo na hora —
    * sem virar um segundo registro, evitando saldo contado em dobro.
    */
-  registrarMovimentacao(dto: RegistrarMovimentacaoDto): Promise<Conta> {
+  async registrarMovimentacao(dto: RegistrarMovimentacaoDto): Promise<Conta> {
     const isEntrada = dto.tipo === 'ENTRADA';
     const tipo = isEntrada ? ContaTipo.A_RECEBER : ContaTipo.A_PAGAR;
     const status = isEntrada ? ContaStatus.RECEBIDO : ContaStatus.PAGO;
-    const data = dto.data ? new Date(dto.data) : new Date();
+    const tz = await this.repo.tenantTimezone();
+    // date-only → meio-dia local; sem data → agora (instante real). (SPEC-011)
+    const data = dto.data ? ancorarDataOnly(dto.data, tz) : new Date();
     return this.repo.create({
       tipo,
       descricao: dto.descricao,
@@ -99,8 +104,8 @@ export class FinanceiroService {
   }
 
   async fluxoCaixa(inicioIso?: string, fimIso?: string): Promise<FluxoCaixa> {
-    const fim = fimIso ? new Date(fimIso) : new Date();
-    const inicio = inicioIso ? new Date(inicioIso) : new Date(fim.getFullYear(), fim.getMonth(), 1);
+    const tz = await this.repo.tenantTimezone();
+    const { inicio, fim } = this.bordas(inicioIso, fimIso, tz);
     const [entradas, saidas] = await Promise.all([
       this.repo.somaQuitadas(ContaTipo.A_RECEBER, inicio, fim),
       this.repo.somaQuitadas(ContaTipo.A_PAGAR, inicio, fim),
@@ -117,8 +122,8 @@ export class FinanceiroService {
    * tudo em centavos. Regime de caixa (conta na data do pagamento). Base do painel e das respostas da Nina.
    */
   async resumo(inicioIso?: string, fimIso?: string): Promise<ResumoFinanceiro> {
-    const fim = fimIso ? new Date(fimIso) : new Date();
-    const inicio = inicioIso ? new Date(inicioIso) : new Date(fim.getFullYear(), fim.getMonth(), 1);
+    const tz = await this.repo.tenantTimezone();
+    const { inicio, fim } = this.bordas(inicioIso, fimIso, tz);
 
     const [quitadas, aPagar, aReceber] = await Promise.all([
       this.repo.quitadasNoPeriodo(inicio, fim),
@@ -165,8 +170,33 @@ export class FinanceiroService {
     };
   }
 
-  vencimentos(dias = 7): Promise<Conta[]> {
-    const ate = new Date(Date.now() + dias * 86_400_000);
+  async vencimentos(dias = 7): Promise<Conta[]> {
+    const tz = await this.repo.tenantTimezone();
+    // Janela até o FIM DO DIA LOCAL daqui a ~`dias` dias (não `now + N*24h` cru). (SPEC-011)
+    const alvo = new Date(Date.now() + dias * 86_400_000);
+    const ate = limitesDoDia(alvo, tz).fim;
     return this.repo.vencimentos(ate);
+  }
+
+  /**
+   * Bordas [inicio, fim] do período no fuso do tenant (SPEC-011). Sem params → mês corrente
+   * local (1º do mês → agora). Param date-only → início/fim do dia local; ISO com hora → instante.
+   */
+  private bordas(
+    inicioIso: string | undefined,
+    fimIso: string | undefined,
+    tz: string,
+  ): { inicio: Date; fim: Date } {
+    const fim = fimIso ? this.bordaDia(fimIso, tz, 'fim') : new Date();
+    const inicio = inicioIso ? this.bordaDia(inicioIso, tz, 'inicio') : limitesDoMes(fim, tz).inicio;
+    return { inicio, fim };
+  }
+
+  private bordaDia(iso: string, tz: string, qual: 'inicio' | 'fim'): Date {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(iso.trim())) {
+      const lim = limitesDoDia(ancorarDataOnly(iso, tz), tz);
+      return qual === 'inicio' ? lim.inicio : lim.fim;
+    }
+    return new Date(iso);
   }
 }
