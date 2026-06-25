@@ -40,6 +40,7 @@ const conta = (over: Partial<ContaComCategoria>): ContaComCategoria => ({
   pagoEm: new Date('2026-06-10'),
   contraparte: null,
   origem: ContaOrigem.AVULSO,
+  idempotencyKey: null,
   createdAt: new Date(),
   updatedAt: new Date(),
   deletedAt: null,
@@ -133,6 +134,51 @@ describe('FinanceiroService', () => {
       expect(arg.status).toBe(ContaStatus.PAGO);
       expect(arg.origem).toBe(ContaOrigem.AVULSO);
       expect(arg.pagoEm).toBeInstanceOf(Date);
+    });
+  });
+
+  describe('idempotência (SPEC-013)', () => {
+    it('registrarMovimentacao repassa a idempotencyKey ao repo.create', async () => {
+      await service.registrarMovimentacao({
+        tipo: 'ENTRADA',
+        descricao: 'venda',
+        valorCentavos: 25000,
+        idempotencyKey: 'evt-123',
+      });
+      expect(repo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ idempotencyKey: 'evt-123' }),
+      );
+    });
+
+    it('registrarMovimentacao sem chave → idempotencyKey null (comportamento atual)', async () => {
+      await service.registrarMovimentacao({ tipo: 'ENTRADA', descricao: 'venda', valorCentavos: 25000 });
+      expect(repo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ idempotencyKey: null }),
+      );
+    });
+
+    it('create repassa a idempotencyKey ao repo.create (preservando vencimento tz)', async () => {
+      await service.create({
+        tipo: ContaTipo.A_PAGAR,
+        descricao: 'aluguel',
+        valorCentavos: 100,
+        vencimento: '2026-06-30',
+        idempotencyKey: 'evt-456',
+      } as unknown as CreateContaDto);
+      const arg = repo.create.mock.calls[0][0];
+      expect(arg.idempotencyKey).toBe('evt-456');
+      // Não regrediu o tz da SPEC-011: vencimento date-only ancorado ao meio-dia local.
+      expect(arg.vencimento.toISOString()).toBe('2026-06-30T15:00:00.000Z');
+    });
+
+    it('create sem chave → idempotencyKey null (comportamento atual)', async () => {
+      await service.create({
+        tipo: ContaTipo.A_PAGAR,
+        descricao: 'aluguel',
+        valorCentavos: 100,
+        vencimento: '2026-06-30',
+      } as unknown as CreateContaDto);
+      expect(repo.create.mock.calls[0][0].idempotencyKey).toBeNull();
     });
   });
 

@@ -23,4 +23,12 @@ export class RegistrarMovimentacaoDto {
   @IsOptional()
   @IsISO8601()
   data?: string;
+
+  /**
+   * Chave de idempotência (SPEC-013): reentrega do mesmo evento (ex.: `key.id` do
+   * WhatsApp) não duplica a movimentação — o repositório devolve o registro existente.
+   */
+  @IsOptional()
+  @IsString()
+  idempotencyKey?: string;
 }

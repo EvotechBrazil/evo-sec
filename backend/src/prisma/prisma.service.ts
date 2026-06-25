@@ -24,6 +24,14 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   }
 
   /**
+   * Pinga o banco com uma query trivial. Usado pela sonda de readiness
+   * (`GET /health/ready`) — lança se o Postgres estiver indisponível.
+   */
+  async ping(): Promise<void> {
+    await this.$queryRaw`SELECT 1`;
+  }
+
+  /**
    * Executa um conjunto de operações com o tenant atual aplicado via RLS.
    * Usa transação para garantir que `SET LOCAL` valha apenas para o escopo.
    */

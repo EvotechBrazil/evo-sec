@@ -24,7 +24,7 @@ export class FinancasController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: AportarDto,
   ): Promise<MetaFinanceira> {
-    return this.financas.aportar(id, dto.valorCentavos);
+    return this.financas.aportar(id, dto.valorCentavos, dto.idempotencyKey);
   }
 
   @Post('investimentos')

@@ -7,12 +7,14 @@ import { AlertaVencimentosService } from './alertas/alertas-vencimentos.service'
 import { AlertaMetasService } from './alertas/alertas-metas.service';
 import { AlertaAguardandoService } from './alertas/alertas-aguardando.service';
 import { AlertaLembretesService } from './alertas/alertas-lembretes.service';
+import { AlertaCustoService } from './alertas/alerta-custo.service';
 import { RecadosModule } from '../recados/recados.module';
 import { TarefasModule } from '../tarefas/tarefas.module';
 import { LembretesModule } from '../lembretes/lembretes.module';
 import { AgendaModule } from '../agenda/agenda.module';
 import { FinanceiroModule } from '../financeiro/financeiro.module';
 import { FinancasModule } from '../financas/financas.module';
+import { CustoModule } from '../custo/custo.module';
 
 /**
  * Agrega os dados do tenant em digests diário/semanal (SPEC-002) e alertas
@@ -27,6 +29,7 @@ import { FinancasModule } from '../financas/financas.module';
     AgendaModule,
     FinanceiroModule,
     FinancasModule,
+    CustoModule,
   ],
   controllers: [ResumoController, AlertasController],
   providers: [
@@ -36,6 +39,7 @@ import { FinancasModule } from '../financas/financas.module';
     AlertaMetasService,
     AlertaAguardandoService,
     AlertaLembretesService,
+    AlertaCustoService,
   ],
 })
 export class ResumoModule {}

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { CategoriaTipo, ContaTipo, Recorrencia } from '@prisma/client';
+import { CategoriaTipo, ContaTipo, ModeloTarefa, Recorrencia } from '@prisma/client';
 import { OpenRouterAdapter } from './openrouter.adapter';
+import { CustoService } from '../custo/custo.service';
 import { ContextoService } from './contexto.service';
 import { ElevenLabsAdapter, VozResultado } from './elevenlabs.adapter';
 import { RecadosService } from '../recados/recados.service';
@@ -77,6 +78,7 @@ export class NinaService {
     private readonly categorias: CategoriasService,
     private readonly financas: FinancasService,
     private readonly voz: ElevenLabsAdapter,
+    private readonly custo: CustoService,
   ) {}
 
   /** Gera áudio (TTS ElevenLabs) de um texto — mesma voz do WhatsApp, p/ a voz do app (`/falar`). */
@@ -99,7 +101,20 @@ export class NinaService {
     // Memória conversacional (SPEC-006): carrega o histórico da sessão ativa antes
     // do NLU (best-effort — se falhar, segue sem contexto em vez de quebrar).
     const historico = await this.contexto.historico().catch(() => []);
-    const { acao, dados, resposta } = await this.llm.intent(texto, nowIso, historico);
+    const { acao, dados, resposta, usage, custoMicroUsd } = await this.llm.intent(texto, nowIso, historico);
+    // Telemetria de custo LLM (SPEC-012/14C): grava UsoLlm de verdade. Best-effort —
+    // se a API não devolveu `usage` ou a gravação falhar, NUNCA quebra o fluxo da Nina.
+    if (usage) {
+      this.custo
+        .registrar({
+          tarefa: ModeloTarefa.CLASSIFICAR,
+          modelo: this.llm.modelo,
+          tokensIn: usage.tokensIn,
+          tokensOut: usage.tokensOut,
+          custoMicroUsd: custoMicroUsd ?? 0,
+        })
+        .catch(() => undefined);
+    }
 
     const reply = await this.executarNlu(acao, dados, resposta, texto);
     await this.registrarTurno(texto, reply.resposta);
