@@ -32,10 +32,26 @@
 - **Forjado:** `POST /webhook/nina` com `fromMe:true` + número do dono no corpo, **sem header**
   → descartado no `Valida Segredo` (0 itens), **nenhuma escrita**. ✅
 
-## Pendências (Tiago — cutover, ordem importa; **Publish já feito pela Claude**)
-1. Evolution manda `x-webhook-token: <segredo>` **primeiro** (nó já publicado, ainda fail-open).
-2. Setar `EVOLUTION_WEBHOOK_HMAC_SECRET` no serviço n8n (EasyPanel) + Restart → fail-closed.
-3. Validar real (passa) + forjado (descartado).
+## ✅ Fechamento E2E (2026-06-25) — #1 RESOLVIDO E VERIFICADO em prod
+
+Durante o cutover (Claude + Tiago ao vivo), dois pivôs:
+1. **Header → query-param.** O **Evolution 2.3.7 não tem campo de header** no webhook (só URL).
+   O nó passou a validar o segredo na **query** (`?token=<segredo>`); URL do Evolution virou
+   `.../webhook/nina?token=<segredo>`. Confirmado por log (exec 821) que o `query.token` chega.
+2. **`$env` não lido → 2 gotchas.** Teste forjado com token errado **VAZOU** até o LLM (exec 826,
+   ~17s) mesmo com a env "setada" → `expected` vazio. Causa: (a) a env estava na **`api-nina`**, não
+   no **serviço n8n** (o Code node só lê o env do processo do n8n); (b) `N8N_BLOCK_ENV_ACCESS_IN_NODE`
+   bloqueia `$env` em Code node. Fix: env no **serviço n8n** + `N8N_BLOCK_ENV_ACCESS_IN_NODE=false`
+   + restart. (Tentativa de hardcodar o segredo no nó foi **barrada pelo classificador** — correto,
+   "segredos só em env".)
+
+**Verificação final (activeVersionId `8536d345`):**
+- Forjado **sem token** (exec 827) → `Valida Segredo` saída `[[]]`, parou no nó (0,2s). ✅
+- Forjado **token errado** (exec 828) → idem (0,26s). ✅
+- **Real** (token via URL) → "nina ping" → "pong". ✅
+
+**Lição:** "pong" sozinho NÃO prova enforcement (fail-open responde igual); o teste forjado é que
+distingue. Detalhe completo + config + rotação em `n8n/workflows/nina-webhook-seguranca.md`.
 
 ## Observação (drift de STATE detectado)
 O draft de timeouts da SPEC-009 (b) (`options.timeout=15000` nos httpRequest) **não está** no
