@@ -9,6 +9,8 @@ import {
 } from '@prisma/client';
 import { FinanceiroService } from './financeiro.service';
 import { ContaComCategoria, FinanceiroRepository } from './financeiro.repository';
+import { CreateContaDto } from './dto/create-conta.dto';
+import { fmtData } from '../resumo/format.util';
 
 const cat = (nome: string, tipo: CategoriaTipo, grupoDre: GrupoDre): Categoria => ({
   id: `cat-${nome}`,
@@ -50,13 +52,17 @@ describe('FinanceiroService', () => {
     quitadasNoPeriodo: jest.Mock;
     somaPendentes: jest.Mock;
     create: jest.Mock;
+    vencimentos: jest.Mock;
+    tenantTimezone: jest.Mock;
   };
 
   beforeEach(() => {
     repo = {
-      quitadasNoPeriodo: jest.fn(),
+      quitadasNoPeriodo: jest.fn().mockResolvedValue([]),
       somaPendentes: jest.fn().mockResolvedValue(0),
       create: jest.fn().mockResolvedValue({}),
+      vencimentos: jest.fn().mockResolvedValue([]),
+      tenantTimezone: jest.fn().mockResolvedValue('America/Sao_Paulo'),
     };
     service = new FinanceiroService(repo as unknown as FinanceiroRepository);
   });
@@ -127,6 +133,59 @@ describe('FinanceiroService', () => {
       expect(arg.status).toBe(ContaStatus.PAGO);
       expect(arg.origem).toBe(ContaOrigem.AVULSO);
       expect(arg.pagoEm).toBeInstanceOf(Date);
+    });
+  });
+
+  describe('timezone (SPEC-011)', () => {
+    const SP = 'America/Sao_Paulo';
+    afterEach(() => jest.useRealTimers());
+
+    it('resumo() default: 1º do mês no fuso do tenant, não UTC', async () => {
+      // 2026-06-01T01:00:00Z = 31/05 22h em SP → mês corrente é MAIO (não junho)
+      jest.useFakeTimers().setSystemTime(new Date('2026-06-01T01:00:00Z'));
+      await service.resumo();
+      const [inicio, fim] = repo.quitadasNoPeriodo.mock.calls[0];
+      expect(inicio.toISOString()).toBe('2026-05-01T03:00:00.000Z'); // 1 maio 00:00 SP
+      expect(fim.toISOString()).toBe('2026-06-01T01:00:00.000Z'); // "agora"
+    });
+
+    it('resumo() com inicio/fim date-only → bordas do dia local', async () => {
+      await service.resumo('2026-06-10', '2026-06-20');
+      const [inicio, fim] = repo.quitadasNoPeriodo.mock.calls[0];
+      expect(inicio.toISOString()).toBe('2026-06-10T03:00:00.000Z'); // 10/06 00:00 SP
+      expect(fim.toISOString()).toBe('2026-06-21T03:00:00.000Z'); // fim do dia 20 = 21/06 00:00 SP
+    });
+
+    it('vencimentos(dias): janela até o fim do dia local, não now+N*24h cru', async () => {
+      jest.useFakeTimers().setSystemTime(new Date('2026-06-15T12:00:00Z')); // 09:00 SP
+      await service.vencimentos(7);
+      const [ate] = repo.vencimentos.mock.calls[0];
+      // alvo = 22/06 09:00 SP → fim do dia 22 = 23/06 00:00 SP = 03:00 UTC
+      expect(ate.toISOString()).toBe('2026-06-23T03:00:00.000Z');
+    });
+
+    it('create: vencimento date-only "2026-06-30" → meio-dia local (exibe 30/06, não 29)', async () => {
+      await service.create({
+        tipo: ContaTipo.A_PAGAR,
+        descricao: 'aluguel',
+        valorCentavos: 100,
+        vencimento: '2026-06-30',
+      } as unknown as CreateContaDto);
+      const arg = repo.create.mock.calls[0][0];
+      expect(arg.vencimento.toISOString()).toBe('2026-06-30T15:00:00.000Z'); // meio-dia SP
+      expect(fmtData(arg.vencimento, SP)).toBe('30/06');
+    });
+
+    it('registrarMovimentacao: data date-only → meio-dia local em vencimento e pagoEm', async () => {
+      await service.registrarMovimentacao({
+        tipo: 'SAIDA',
+        descricao: 'x',
+        valorCentavos: 100,
+        data: '2026-06-30',
+      });
+      const arg = repo.create.mock.calls[0][0];
+      expect(arg.vencimento.toISOString()).toBe('2026-06-30T15:00:00.000Z');
+      expect(arg.pagoEm.toISOString()).toBe('2026-06-30T15:00:00.000Z');
     });
   });
 });

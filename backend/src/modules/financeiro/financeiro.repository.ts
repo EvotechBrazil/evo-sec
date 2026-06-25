@@ -109,4 +109,16 @@ export class FinanceiroRepository {
       orderBy: { vencimento: 'asc' },
     });
   }
+
+  /**
+   * Timezone do tenant (tenant-scoped; default America/Sao_Paulo). Aqui (e não via
+   * ResumoRepository) p/ evitar ciclo de módulo — ResumoModule já importa FinanceiroModule.
+   */
+  async tenantTimezone(): Promise<string> {
+    const t = await this.prisma.tenant.findFirst({
+      where: { id: requireTenantId(), deletedAt: null },
+      select: { timezone: true },
+    });
+    return t?.timezone ?? 'America/Sao_Paulo';
+  }
 }
