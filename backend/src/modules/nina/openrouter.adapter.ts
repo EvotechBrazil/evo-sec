@@ -72,6 +72,9 @@ export class OpenRouterAdapter {
             // qwen3.7 é modelo de raciocínio: gasta ~900 tokens de "reasoning" antes do
             // conteúdo. Com 700 o JSON vinha truncado → resposta estranha na voz do app.
             max_tokens: 2000,
+            // Usage Accounting (SPEC-012/14C): sem `usage.include` o OpenRouter devolve só
+            // tokens, sem `cost` → custoMicroUsd vinha 0 (validado em prod). Com isto vem o custo.
+            usage: { include: true },
             messages,
           }),
         },
