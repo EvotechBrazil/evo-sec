@@ -58,7 +58,7 @@ async function main(): Promise<void> {
   });
 
   await prisma.user.upsert({
-    where: { tenantId_email: { tenantId: tenant.id, email } },
+    where: { email }, // email agora é globalmente único (SPEC-015 #11) — upsert determinístico
     update: {},
     create: {
       tenantId: tenant.id,

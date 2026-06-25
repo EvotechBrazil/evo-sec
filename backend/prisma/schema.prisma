@@ -187,7 +187,10 @@ model User {
   id           String   @id @default(uuid()) @db.Uuid
   tenantId     String   @map("tenant_id") @db.Uuid
   tenant       Tenant   @relation(fields: [tenantId], references: [id])
-  email        String
+  // SPEC-015 #11: email globalmente único (1 conta por email) → o login por
+  // findFirst({ email }) fica determinístico. Tradeoff: o mesmo email não pode
+  // coexistir em 2 tenants (aceitável p/ "1 dono por tenant").
+  email        String   @unique
   passwordHash String   @map("password_hash")
   nome         String
   role         UserRole @default(OWNER)
@@ -196,7 +199,6 @@ model User {
   updatedAt    DateTime @updatedAt @map("updated_at")
   deletedAt    DateTime? @map("deleted_at")
 
-  @@unique([tenantId, email])
   @@index([tenantId])
   @@map("users")
 }

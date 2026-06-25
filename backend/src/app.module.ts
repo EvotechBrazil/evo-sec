@@ -14,6 +14,7 @@ import { FinancasModule } from './modules/financas/financas.module';
 import { CustoModule } from './modules/custo/custo.module';
 import { NinaModule } from './modules/nina/nina.module';
 import { ResumoModule } from './modules/resumo/resumo.module';
+import { TenantsModule } from './modules/tenants/tenants.module';
 import { AuthMiddleware } from './common/auth/auth.middleware';
 import { TenantThrottlerGuard } from './common/throttler/tenant-throttler.guard';
 
@@ -39,6 +40,7 @@ import { TenantThrottlerGuard } from './common/throttler/tenant-throttler.guard'
     CustoModule,
     NinaModule,
     ResumoModule,
+    TenantsModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: TenantThrottlerGuard }],
@@ -49,6 +51,7 @@ export class AppModule implements NestModule {
       .apply(AuthMiddleware)
       .exclude(
         { path: 'auth/login', method: RequestMethod.POST },
+        { path: 'auth/refresh', method: RequestMethod.POST },
         { path: 'health', method: RequestMethod.GET },
         { path: 'health/ready', method: RequestMethod.GET },
       )

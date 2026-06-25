@@ -1,9 +1,13 @@
-import axios from 'axios';
-import { getToken, clearToken } from './auth';
+import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
+import { getToken, getRefreshToken, setTokens, clearToken } from './auth';
 
 const baseURL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api/v1';
 
 export const api = axios.create({ baseURL });
+
+// Marca de "esse request já foi re-tentado após renovar o token" — evita loop
+// (refresh → 401 → refresh → …). Vive no config do request original.
+type RetriableConfig = InternalAxiosRequestConfig & { _retry?: boolean };
 
 api.interceptors.request.use((config) => {
   const token = getToken();
@@ -13,19 +17,85 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// 401 por token ausente/expirado → desloga e volta pro login (não fica falhando
-// em silêncio). 401 de regra de negócio (ex.: senha atual incorreta) é repassado
-// pra tela tratar; o login também trata o próprio 401.
+// Desloga de fato: limpa o par e volta pro login. Usado quando o refresh não é
+// possível ou falha (refresh ausente/inválido/expirado).
+function forceLogout(): void {
+  clearToken();
+  if (typeof window !== 'undefined') {
+    window.location.href = '/login';
+  }
+}
+
+// Renovação do access via /auth/refresh. Feita com axios "cru" (não o `api`) pra
+// NÃO passar pelos interceptors e recursar. Compartilhada entre requests
+// concorrentes que tomaram 401 ao mesmo tempo (um único refresh em voo).
+let refreshing: Promise<string> | null = null;
+
+async function renovarAccessToken(): Promise<string> {
+  const refreshToken = getRefreshToken();
+  if (!refreshToken) throw new Error('sem refresh token');
+  if (!refreshing) {
+    refreshing = axios
+      .post<{ data: { accessToken: string; refreshToken: string } }>(
+        `${baseURL}/auth/refresh`,
+        { refreshToken },
+      )
+      .then(({ data }) => {
+        const { accessToken, refreshToken: novoRefresh } = data.data;
+        setTokens(accessToken, novoRefresh); // rotação: guarda o novo par
+        return accessToken;
+      })
+      .finally(() => {
+        refreshing = null;
+      });
+  }
+  return refreshing;
+}
+
+// 401 por token ausente/expirado: em vez de deslogar de cara, tenta renovar UMA
+// vez e refazer o request original. Só desloga se não há refresh, se a request já
+// foi re-tentada, ou se o próprio /auth/refresh deu 401. 401 de regra de negócio
+// (ex.: senha atual incorreta) é repassado pra tela tratar; login trata o seu 401.
 api.interceptors.response.use(
   (res) => res,
-  (error) => {
-    const status = error?.response?.status;
-    const msg: string = error?.response?.data?.message ?? '';
-    const url: string = error?.config?.url ?? '';
+  async (error: AxiosError<{ message?: string }>) => {
+    const status = error.response?.status;
+    const msg = error.response?.data?.message ?? '';
+    const config = error.config as RetriableConfig | undefined;
+    const url = config?.url ?? '';
     const tokenIssue = /token|credenciais ausentes|expirad/i.test(msg);
-    if (status === 401 && tokenIssue && !url.includes('/auth/login') && typeof window !== 'undefined') {
-      clearToken();
-      window.location.href = '/login';
+
+    const ehLogin = url.includes('/auth/login');
+    const ehRefresh = url.includes('/auth/refresh');
+
+    // 401 do próprio refresh → o refresh é inválido/expirado: logout direto.
+    if (status === 401 && ehRefresh) {
+      forceLogout();
+      return Promise.reject(error);
+    }
+
+    if (
+      status === 401 &&
+      tokenIssue &&
+      !ehLogin &&
+      config &&
+      !config._retry &&
+      getRefreshToken()
+    ) {
+      config._retry = true;
+      try {
+        const novoAccess = await renovarAccessToken();
+        config.headers.Authorization = `Bearer ${novoAccess}`;
+        return api(config); // refaz o request original com o token novo
+      } catch {
+        forceLogout(); // refresh falhou (rede/inválido) → comportamento atual
+        return Promise.reject(error);
+      }
+    }
+
+    // Sem refresh possível (ou já re-tentado) e ainda é 401 de token → logout.
+    if (status === 401 && tokenIssue && !ehLogin) {
+      forceLogout();
     }
     return Promise.reject(error);
   },
@@ -73,11 +143,14 @@ export interface Lembrete {
 }
 
 export async function login(email: string, password: string): Promise<string> {
-  const { data } = await api.post<{ data: { accessToken: string } }>('/auth/login', {
-    email,
-    password,
-  });
-  return unwrap(data).accessToken;
+  const { data } = await api.post<{ data: { accessToken: string; refreshToken: string } }>(
+    '/auth/login',
+    { email, password },
+  );
+  const { accessToken, refreshToken } = unwrap(data);
+  // Guarda o par já aqui (a tela de login chama setToken(access) por cima — idempotente).
+  setTokens(accessToken, refreshToken);
+  return accessToken;
 }
 
 export async function changePassword(senhaAtual: string, novaSenha: string): Promise<void> {
