@@ -19,7 +19,10 @@
   - `Recebe Evolution → Valida Segredo (webhook) → Filtro de Gatilho (isolamento)`
   - conexão antiga `Recebe Evolution → Filtro de Gatilho` **removida**
   - `Filtro de Gatilho → Roteia (texto/midia/pronta)` **intacta**
-- ✅ **Não publicado / prod intacta:** `versionId 79bc58b1…` ≠ `activeVersionId eda3d7b8…`.
+- ✅ **Blindagem caminho crítico:** `jsCode` endurecido p/ nunca lançar (try/catch no `$env`;
+  guarda em `$input.first()`) — um throw aqui = silêncio (o próprio #3). Re-`node --check` OK.
+- ✅ **PUBLICADO live (fail-open):** `versionId == activeVersionId == 816107b0…`, `active:true`,
+  46 nós. Sem segredo setado → passa tudo → **zero mudança de comportamento** em prod.
 - ✅ **UTF-8 íntegro** no `jsCode` salvo (`§`, regex `\s`).
 - ✅ **Não-regressão:** os outros 45 nós inalterados; o nó é transparente no caminho feliz
   (`$input.all()` repassa o item do webhook com `.body`/`.headers` que o filtro já lê).
@@ -29,11 +32,10 @@
 - **Forjado:** `POST /webhook/nina` com `fromMe:true` + número do dono no corpo, **sem header**
   → descartado no `Valida Segredo` (0 itens), **nenhuma escrita**. ✅
 
-## Pendências (Tiago — cutover, ordem importa)
-1. Evolution manda `x-webhook-token: <segredo>` **primeiro** (nó ainda fail-open).
-2. **Publish** do workflow.
-3. Setar `EVOLUTION_WEBHOOK_HMAC_SECRET` no serviço n8n (EasyPanel) + Restart → fail-closed.
-4. Validar real (passa) + forjado (descartado).
+## Pendências (Tiago — cutover, ordem importa; **Publish já feito pela Claude**)
+1. Evolution manda `x-webhook-token: <segredo>` **primeiro** (nó já publicado, ainda fail-open).
+2. Setar `EVOLUTION_WEBHOOK_HMAC_SECRET` no serviço n8n (EasyPanel) + Restart → fail-closed.
+3. Validar real (passa) + forjado (descartado).
 
 ## Observação (drift de STATE detectado)
 O draft de timeouts da SPEC-009 (b) (`options.timeout=15000` nos httpRequest) **não está** no
