@@ -2,6 +2,7 @@ import 'reflect-metadata';
 import 'dotenv/config';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { loadEnv } from './config/env.config';
@@ -28,7 +29,11 @@ async function bootstrap(): Promise<void> {
   });
 
   const env = loadEnv();
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  // O webhook do Evolution carrega mídia em base64 (áudio/foto) — o default de
+  // 100kb do body parser rejeitaria. Subimos o teto p/ acomodar o repasse.
+  app.useBodyParser('json', { limit: '15mb' });
 
   app.use(helmet());
   app.enableCors({ origin: true, credentials: true });

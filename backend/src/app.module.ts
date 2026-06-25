@@ -15,6 +15,7 @@ import { CustoModule } from './modules/custo/custo.module';
 import { NinaModule } from './modules/nina/nina.module';
 import { ResumoModule } from './modules/resumo/resumo.module';
 import { TenantsModule } from './modules/tenants/tenants.module';
+import { WebhookModule } from './modules/webhook/webhook.module';
 import { AuthMiddleware } from './common/auth/auth.middleware';
 import { TenantThrottlerGuard } from './common/throttler/tenant-throttler.guard';
 
@@ -41,6 +42,7 @@ import { TenantThrottlerGuard } from './common/throttler/tenant-throttler.guard'
     NinaModule,
     ResumoModule,
     TenantsModule,
+    WebhookModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: TenantThrottlerGuard }],
@@ -54,6 +56,8 @@ export class AppModule implements NestModule {
         { path: 'auth/refresh', method: RequestMethod.POST },
         { path: 'health', method: RequestMethod.GET },
         { path: 'health/ready', method: RequestMethod.GET },
+        // Ponte de webhook (Evolution→n8n): autentica por ?token=, não por JWT.
+        { path: 'webhook/nina', method: RequestMethod.POST },
       )
       .forRoutes('*');
   }
