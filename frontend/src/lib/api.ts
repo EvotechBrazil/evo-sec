@@ -284,5 +284,15 @@ export async function fetchResumoCusto(): Promise<ResumoCusto> {
   return unwrap(data);
 }
 
-export const usd = (micro: number) =>
-  (micro / 1_000_000).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+// Custo em microdólares → USD. Para micro-custos (< 1 centavo, comum com modelos
+// flash baratos) mostra mais casas, senão tudo vira "$0.00" e some o sinal de uso.
+export const usd = (micro: number) => {
+  const dollars = micro / 1_000_000;
+  const digits = micro !== 0 && Math.abs(dollars) < 0.01 ? 4 : 2;
+  return dollars.toLocaleString('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  });
+};
