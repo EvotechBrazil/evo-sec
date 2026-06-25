@@ -6,6 +6,8 @@ import { requireTenantId } from '../../common/tenant/tenant.util';
 export interface TenantDigestInfo {
   timezone: string;
   whatsappNumber: string | null;
+  quietHoursInicio: string | null;
+  quietHoursFim: string | null;
 }
 
 /**
@@ -27,11 +29,18 @@ export class ResumoRepository {
   async tenantInfo(): Promise<TenantDigestInfo> {
     const t = await this.prisma.tenant.findFirst({
       where: { id: requireTenantId(), deletedAt: null },
-      select: { timezone: true, whatsappNumber: true },
+      select: {
+        timezone: true,
+        whatsappNumber: true,
+        quietHoursInicio: true,
+        quietHoursFim: true,
+      },
     });
     return {
       timezone: t?.timezone ?? 'America/Sao_Paulo',
       whatsappNumber: t?.whatsappNumber ?? null,
+      quietHoursInicio: t?.quietHoursInicio ?? null,
+      quietHoursFim: t?.quietHoursFim ?? null,
     };
   }
 

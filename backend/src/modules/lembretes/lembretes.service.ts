@@ -3,6 +3,7 @@ import { Lembrete } from '@prisma/client';
 import { LembretesRepository } from './lembretes.repository';
 import { CreateLembreteDto } from './dto/create-lembrete.dto';
 import { UpdateLembreteDto } from './dto/update-lembrete.dto';
+import { proximaOcorrencia } from '../../common/datas/recorrencia.util';
 
 @Injectable()
 export class LembretesService {
@@ -37,5 +38,27 @@ export class LembretesService {
     if (result.count === 0) {
       throw new NotFoundException('Lembrete não encontrado.');
     }
+  }
+
+  /**
+   * Dispara os lembretes vencidos (SPEC-010): devolve os que disparam AGORA (com a
+   * `dataHora` original, p/ exibir a hora) e, em transação, marca os não-recorrentes
+   * como `NOTIFICADO` e avança a `dataHora` dos recorrentes p/ a próxima ocorrência.
+   * Mutação atômica antes de devolver (at-most-once na v1 — ver SPEC-010 §2).
+   */
+  async dispararPendentes(now: Date = new Date()): Promise<Lembrete[]> {
+    const due = await this.repo.findDue(now);
+    if (due.length === 0) return [];
+
+    const terminaisIds: string[] = [];
+    const avancos: { id: string; proxima: Date }[] = [];
+    for (const l of due) {
+      const prox = proximaOcorrencia(l.dataHora, l.recorrencia, now);
+      if (prox) avancos.push({ id: l.id, proxima: prox });
+      else terminaisIds.push(l.id);
+    }
+
+    await this.repo.aplicarDisparo(terminaisIds, avancos);
+    return due;
   }
 }

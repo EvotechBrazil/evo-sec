@@ -6,6 +6,7 @@ import { AlertasController } from './alertas/alertas.controller';
 import { AlertaVencimentosService } from './alertas/alertas-vencimentos.service';
 import { AlertaMetasService } from './alertas/alertas-metas.service';
 import { AlertaAguardandoService } from './alertas/alertas-aguardando.service';
+import { AlertaLembretesService } from './alertas/alertas-lembretes.service';
 import { RecadosModule } from '../recados/recados.module';
 import { TarefasModule } from '../tarefas/tarefas.module';
 import { LembretesModule } from '../lembretes/lembretes.module';
@@ -34,6 +35,7 @@ import { FinancasModule } from '../financas/financas.module';
     AlertaVencimentosService,
     AlertaMetasService,
     AlertaAguardandoService,
+    AlertaLembretesService,
   ],
 })
 export class ResumoModule {}

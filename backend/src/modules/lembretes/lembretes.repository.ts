@@ -37,4 +37,39 @@ export class LembretesRepository {
       data: { deletedAt: new Date() },
     });
   }
+
+  /** Lembretes vencidos (`dataHora <= now`) e ainda pendentes — tenant-scoped. */
+  findDue(now: Date): Promise<Lembrete[]> {
+    return this.findMany({ dataHora: { lte: now }, status: 'PENDENTE' });
+  }
+
+  /**
+   * Aplica o disparo numa transação (tenant-scoped):
+   * - terminais (não-recorrentes) → `status=NOTIFICADO` + `notificado=true` (encerram);
+   * - avanços (recorrentes) → `dataHora` = próxima ocorrência futura (seguem `PENDENTE`).
+   */
+  async aplicarDisparo(
+    terminaisIds: string[],
+    avancos: { id: string; proxima: Date }[],
+  ): Promise<void> {
+    const tenantId = requireTenantId();
+    const ops: Prisma.PrismaPromise<Prisma.BatchPayload>[] = [];
+    if (terminaisIds.length > 0) {
+      ops.push(
+        this.prisma.lembrete.updateMany({
+          where: { id: { in: terminaisIds }, tenantId, deletedAt: null },
+          data: { status: 'NOTIFICADO', notificado: true },
+        }),
+      );
+    }
+    for (const a of avancos) {
+      ops.push(
+        this.prisma.lembrete.updateMany({
+          where: { id: a.id, tenantId, deletedAt: null },
+          data: { dataHora: a.proxima },
+        }),
+      );
+    }
+    if (ops.length > 0) await this.prisma.$transaction(ops);
+  }
 }
