@@ -1,3 +1,4 @@
+import { ModeloTarefa } from '@prisma/client';
 import { NinaService } from './nina.service';
 import { OpenRouterAdapter, IntentResult } from './openrouter.adapter';
 import { ContextoService, ChatMsg } from './contexto.service';
@@ -44,6 +45,7 @@ describe('NinaService — memória conversacional (SPEC-006)', () => {
       {} as never, // categorias
       {} as never, // financas
       {} as never, // voz
+      { registrar: jest.fn().mockResolvedValue({}) } as never, // custo
     );
   };
 
@@ -117,6 +119,7 @@ describe('NinaService — datas/timezone (SPEC-007)', () => {
       { resolverPorNome: jest.fn().mockResolvedValue(null) } as never, // categorias
       {} as never, // financas
       {} as never, // voz
+      { registrar: jest.fn().mockResolvedValue({}) } as never, // custo
     );
     return { service, intent, lembreteCreate, agendaCreate, financeiroCreate };
   }
@@ -153,5 +156,88 @@ describe('NinaService — datas/timezone (SPEC-007)', () => {
     const { service, intent } = build({ acao: 'conversa', dados: {}, resposta: 'oi' });
     await service.processar('oi');
     expect(intent.mock.calls[0][1]).toMatch(/-03:00$/);
+  });
+});
+
+/**
+ * SPEC-012/14C: grava telemetria de custo LLM (UsoLlm) de verdade. Após o NLU, se a
+ * resposta trouxe `usage`, chama custo.registrar com os tokens + modelo. Best-effort:
+ * sem `usage` não registra; e uma falha na gravação NUNCA derruba a resposta da Nina.
+ */
+describe('NinaService — telemetria de custo LLM (SPEC-012/14C)', () => {
+  function build(intentResult: IntentResult, modelo = 'modelo-teste') {
+    const intent = jest.fn(async (..._args: unknown[]) => intentResult);
+    const registrar = jest.fn().mockResolvedValue({});
+    const service = new NinaService(
+      { intent, modelo } as never, // llm
+      { historico: jest.fn().mockResolvedValue([]), registrar: jest.fn().mockResolvedValue(undefined) } as never, // contexto
+      {} as never, // recados
+      {} as never, // tarefas
+      {} as never, // lembretes
+      {} as never, // agenda
+      {} as never, // financeiro
+      {} as never, // categorias
+      {} as never, // financas
+      {} as never, // voz
+      { registrar } as never, // custo
+    );
+    return { service, intent, registrar };
+  }
+
+  it('com usage → custo.registrar é chamado com tokens, modelo e custoMicroUsd', async () => {
+    const { service, registrar } = build({
+      acao: 'conversa',
+      dados: {},
+      resposta: 'oi',
+      usage: { tokensIn: 123, tokensOut: 45 },
+      custoMicroUsd: 1200,
+    });
+    await service.processar('oi');
+
+    expect(registrar).toHaveBeenCalledTimes(1);
+    expect(registrar).toHaveBeenCalledWith({
+      tarefa: ModeloTarefa.CLASSIFICAR,
+      modelo: 'modelo-teste',
+      tokensIn: 123,
+      tokensOut: 45,
+      custoMicroUsd: 1200,
+    });
+  });
+
+  it('usage sem custoMicroUsd → registra com custoMicroUsd 0', async () => {
+    const { service, registrar } = build({
+      acao: 'conversa',
+      dados: {},
+      resposta: 'oi',
+      usage: { tokensIn: 10, tokensOut: 20 },
+      custoMicroUsd: null,
+    });
+    await service.processar('oi');
+
+    expect(registrar).toHaveBeenCalledWith(expect.objectContaining({ custoMicroUsd: 0, tokensIn: 10, tokensOut: 20 }));
+  });
+
+  it('SEM usage → não registra (não quebra)', async () => {
+    const { service, registrar } = build({ acao: 'conversa', dados: {}, resposta: 'oi', usage: null });
+    const reply = await service.processar('oi');
+
+    expect(registrar).not.toHaveBeenCalled();
+    expect(reply.resposta).toBe('oi');
+  });
+
+  it('best-effort: custo.registrar rejeitando NÃO quebra processar', async () => {
+    const { service, registrar } = build({
+      acao: 'conversa',
+      dados: {},
+      resposta: 'oi',
+      usage: { tokensIn: 1, tokensOut: 2 },
+      custoMicroUsd: 5,
+    });
+    registrar.mockRejectedValue(new Error('db down'));
+
+    const reply = await service.processar('oi');
+    expect(reply.resposta).toBe('oi');
+    expect(reply.acao).toBe('conversa');
+    expect(registrar).toHaveBeenCalledTimes(1);
   });
 });

@@ -6,5 +6,6 @@ import { CustoRepository } from './custo.repository';
 @Module({
   controllers: [CustoController],
   providers: [CustoService, CustoRepository],
+  exports: [CustoService],
 })
 export class CustoModule {}

@@ -30,11 +30,20 @@ export class FinancasService {
     return this.repo.listMetas();
   }
 
-  async aportar(id: string, valorCentavos: number): Promise<MetaFinanceira> {
-    const result = await this.repo.aportar(id, valorCentavos);
-    if (result.count === 0) throw new NotFoundException('Meta não encontrada.');
+  async aportar(
+    id: string,
+    valorCentavos: number,
+    idempotencyKey?: string,
+  ): Promise<MetaFinanceira> {
+    const result = await this.repo.aportar(id, valorCentavos, idempotencyKey);
+    // Reenvio da mesma chave (SPEC-013): não incrementou de novo, mas a meta
+    // existe — devolve o estado atual sem 404.
+    if (result.count === 0 && !result.jaAplicado) {
+      throw new NotFoundException('Meta não encontrada.');
+    }
     const meta = await this.repo.findMeta(id);
-    return meta as MetaFinanceira;
+    if (!meta) throw new NotFoundException('Meta não encontrada.');
+    return meta;
   }
 
   createInvestimento(dto: CreateInvestimentoDto): Promise<Investimento> {

@@ -89,4 +89,61 @@ describe('OpenRouterAdapter.intent (memória SPEC-006)', () => {
     expect(msgs[0].role).toBe('system');
     expect(msgs[1].role).toBe('user');
   });
+
+  // Telemetria de custo (SPEC-012/14C): o adapter parseia `usage` da resposta do
+  // OpenRouter e o expõe junto do parse, sem alterar acao/dados/resposta.
+  describe('telemetria de custo (usage)', () => {
+    const okComUsage = (content: string, usage: unknown) =>
+      ({
+        ok: true,
+        json: async () => ({ choices: [{ message: { content } }], usage }),
+      } as never);
+
+    it('parseia usage → tokensIn/tokensOut e converte cost (USD) p/ microUsd', async () => {
+      fetchSpy.mockResolvedValue(
+        okComUsage('{"acao":"conversa","dados":{},"resposta":"oi"}', {
+          prompt_tokens: 123,
+          completion_tokens: 45,
+          cost: 0.0012, // USD → 1200 microUsd
+        }),
+      );
+      const adapter = new OpenRouterAdapter();
+      const r = await adapter.intent('oi', NOW);
+
+      expect(r.usage).toEqual({ tokensIn: 123, tokensOut: 45 });
+      expect(r.custoMicroUsd).toBe(1200);
+      // parse normal preservado.
+      expect(r.acao).toBe('conversa');
+      expect(r.resposta).toBe('oi');
+    });
+
+    it('usage com tokens mas SEM cost → custoMicroUsd null (tokens preservados)', async () => {
+      fetchSpy.mockResolvedValue(
+        okComUsage('{"acao":"conversa","dados":{},"resposta":"oi"}', {
+          prompt_tokens: 10,
+          completion_tokens: 20,
+        }),
+      );
+      const adapter = new OpenRouterAdapter();
+      const r = await adapter.intent('oi', NOW);
+
+      expect(r.usage).toEqual({ tokensIn: 10, tokensOut: 20 });
+      expect(r.custoMicroUsd).toBeNull();
+    });
+
+    it('resposta SEM usage → usage e custoMicroUsd null (não quebra)', async () => {
+      // okResponse padrão (sem `usage`).
+      const adapter = new OpenRouterAdapter();
+      const r = await adapter.intent('oi', NOW);
+
+      expect(r.usage).toBeNull();
+      expect(r.custoMicroUsd).toBeNull();
+      expect(r.acao).toBe('conversa');
+    });
+
+    it('expõe o modelo da env (usado no body do fetch)', () => {
+      const adapter = new OpenRouterAdapter();
+      expect(adapter.modelo).toBe('modelo-teste');
+    });
+  });
 });

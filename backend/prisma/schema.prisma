@@ -308,10 +308,12 @@ model Conta {
   origem        ContaOrigem @default(TITULO)
   categoriaId   String?     @map("categoria_id") @db.Uuid
   categoriaRef  Categoria?  @relation(fields: [categoriaId], references: [id])
+  idempotencyKey String?    @map("idempotency_key") // dedup de escrita (SPEC-013); null não conflita
   createdAt     DateTime    @default(now()) @map("created_at")
   updatedAt     DateTime    @updatedAt @map("updated_at")
   deletedAt     DateTime?   @map("deleted_at")
 
+  @@unique([tenantId, idempotencyKey])
   @@index([tenantId, status])
   @@index([tenantId, vencimento])
   @@index([tenantId, tipo])
@@ -351,10 +353,12 @@ model MetaFinanceira {
   aporteMensalSugeridoCent Int?       @map("aporte_mensal_sugerido_centavos")
   alertaAtraso             Boolean    @default(true) @map("alerta_atraso")
   status                   MetaStatus @default(ATIVA)
+  idempotencyKey           String?    @map("idempotency_key") // dedup de aporte (SPEC-013); null não conflita
   createdAt                DateTime   @default(now()) @map("created_at")
   updatedAt                DateTime   @updatedAt @map("updated_at")
   deletedAt                DateTime?  @map("deleted_at")
 
+  @@unique([tenantId, idempotencyKey])
   @@index([tenantId, status])
   @@map("metas_financeiras")
 }

@@ -9,8 +9,17 @@ export type ContaComCategoria = Conta & { categoriaRef: Categoria | null };
 export class FinanceiroRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  create(data: Omit<Prisma.ContaUncheckedCreateInput, 'tenantId'>): Promise<Conta> {
-    return this.prisma.conta.create({ data: { ...data, tenantId: requireTenantId() } });
+  async create(data: Omit<Prisma.ContaUncheckedCreateInput, 'tenantId'>): Promise<Conta> {
+    const tenantId = requireTenantId();
+    // Dedup de idempotência (SPEC-013): com chave setada, uma reentrega do mesmo evento
+    // devolve a conta já criada em vez de dobrar o lançamento. Sem chave → cria normal.
+    if (data.idempotencyKey) {
+      const existente = await this.prisma.conta.findFirst({
+        where: { tenantId, idempotencyKey: data.idempotencyKey, deletedAt: null },
+      });
+      if (existente) return existente;
+    }
+    return this.prisma.conta.create({ data: { ...data, tenantId } });
   }
 
   findMany(where: Prisma.ContaWhereInput = {}): Promise<Conta[]> {

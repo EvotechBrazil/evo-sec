@@ -49,4 +49,12 @@ export class CreateContaDto {
   @IsOptional()
   @IsString()
   contraparte?: string;
+
+  /**
+   * Chave de idempotência (SPEC-013): reentrega do mesmo evento (ex.: `key.id` do
+   * WhatsApp) não duplica a conta — o repositório devolve o registro existente.
+   */
+  @IsOptional()
+  @IsString()
+  idempotencyKey?: string;
 }

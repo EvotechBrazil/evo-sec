@@ -7,6 +7,10 @@ export interface IntentResult {
   acao: string;
   dados: Record<string, unknown>;
   resposta: string;
+  /** Telemetria de custo (SPEC-012/14C): tokens consumidos na chamada; null se a API não devolveu `usage`. */
+  usage?: { tokensIn: number; tokensOut: number } | null;
+  /** Custo em microdólares (inteiro) derivado de `usage.cost` (USD); null se a API não devolveu custo. */
+  custoMicroUsd?: number | null;
 }
 
 const SYSTEM = `Voce e Nina, secretaria pessoal de Rodrigo (pt-BR, fuso America/Sao_Paulo). Responda SEMPRE com UM unico objeto JSON valido e nada fora dele. Formato: {acao, dados, resposta}. acao: criar_recado, criar_tarefa, criar_lembrete, registrar_movimentacao, criar_conta, consultar_saldo, consultar_contas, pagar_conta, criar_agenda, criar_meta, aportar_meta, cancelar_agenda, conversa.
@@ -32,6 +36,11 @@ export class OpenRouterAdapter {
 
   get configurado(): boolean {
     return Boolean(this.env.openrouterApiKey);
+  }
+
+  /** Modelo usado no body do fetch (env) — exposto p/ a telemetria de custo (SPEC-012/14C). */
+  get modelo(): string {
+    return this.env.openrouterModel;
   }
 
   async intent(texto: string, nowIso: string, historico?: ChatMsg[]): Promise<IntentResult> {
@@ -74,9 +83,23 @@ export class OpenRouterAdapter {
     if (!res.ok) {
       throw new ServiceUnavailableException(`OpenRouter respondeu ${res.status}.`);
     }
-    const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+    const data = (await res.json()) as {
+      choices?: { message?: { content?: string } }[];
+      usage?: { prompt_tokens?: number; completion_tokens?: number; cost?: number };
+      cost?: number;
+    };
     const raw = data.choices?.[0]?.message?.content ?? '';
-    return this.parse(raw);
+    // Telemetria de custo (SPEC-012/14C): o OpenRouter devolve `usage` com tokens e
+    // (às vezes) `cost` em USD — ora em `usage.cost`, ora no topo (`data.cost`).
+    // Best-effort: ausência de `usage` → null, nunca quebra o fluxo da Nina.
+    const u = data.usage;
+    const usage =
+      u && (u.prompt_tokens != null || u.completion_tokens != null)
+        ? { tokensIn: u.prompt_tokens ?? 0, tokensOut: u.completion_tokens ?? 0 }
+        : null;
+    const custoUsd = u?.cost ?? data.cost;
+    const custoMicroUsd = custoUsd != null ? Math.round(custoUsd * 1_000_000) : null;
+    return { ...this.parse(raw), usage, custoMicroUsd };
   }
 
   private parse(raw: string): IntentResult {

@@ -32,11 +32,46 @@ export class FinancasRepository {
     });
   }
 
-  aportar(id: string, valorCentavos: number): Promise<Prisma.BatchPayload> {
-    return this.prisma.metaFinanceira.updateMany({
-      where: { id, tenantId: requireTenantId(), deletedAt: null },
-      data: { valorAtualCentavos: { increment: valorCentavos } },
+  /**
+   * Aplica um aporte (increment) na meta.
+   *
+   * Idempotência (SPEC-013): quando `idempotencyKey` é informada, faz pré-check
+   * tenant-scoped (`@@unique([tenantId, idempotencyKey])`). Se já existir uma meta
+   * carregando essa chave, o aporte já foi aplicado antes → **no-op** (não
+   * incrementa de novo) e devolve `{ count: 0, jaAplicado: true }`. Caso contrário
+   * incrementa e carimba a chave na própria meta, na mesma operação.
+   *
+   * Sem chave → comportamento atual (apenas increment).
+   *
+   * Distinção importante p/ o service: `count: 0 + jaAplicado: false` = meta
+   * inexistente (404); `count: 0 + jaAplicado: true` = repetição (devolve estado atual).
+   */
+  async aportar(
+    id: string,
+    valorCentavos: number,
+    idempotencyKey?: string,
+  ): Promise<{ count: number; jaAplicado: boolean }> {
+    const tenantId = requireTenantId();
+
+    if (idempotencyKey) {
+      const existente = await this.prisma.metaFinanceira.findFirst({
+        where: { tenantId, idempotencyKey },
+        select: { id: true },
+      });
+      if (existente) {
+        // Reenvio da mesma chave: aporte já contabilizado, não soma de novo.
+        return { count: 0, jaAplicado: true };
+      }
+    }
+
+    const res = await this.prisma.metaFinanceira.updateMany({
+      where: { id, tenantId, deletedAt: null },
+      data: {
+        valorAtualCentavos: { increment: valorCentavos },
+        ...(idempotencyKey ? { idempotencyKey } : {}),
+      },
     });
+    return { count: res.count, jaAplicado: false };
   }
 
   // ---- Investimentos ----

@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import 'dotenv/config';
-import { ValidationPipe } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
@@ -9,6 +9,24 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 
 async function bootstrap(): Promise<void> {
+  const logger = new Logger('Bootstrap');
+
+  // Handlers globais de crash (SPEC-012 slice 14B): garantem que erros
+  // assíncronos nunca passem despercebidos. Usamos o Logger do Nest (não
+  // `console`) para manter o formato/coleta de logs padrão da aplicação.
+  process.on('unhandledRejection', (reason) => {
+    logger.error('unhandledRejection', reason instanceof Error ? reason.stack : String(reason));
+    // TODO Sentry.captureException(reason)
+  });
+  process.on('uncaughtException', (err) => {
+    logger.error('uncaughtException', err.stack);
+    // TODO Sentry.captureException(err)
+    // Decisão: apenas logamos e NÃO chamamos process.exit. Derrubar o processo
+    // a cada exceção não-tratada arriscaria interromper requisições/tarefas em
+    // andamento. Preferimos manter o processo vivo e deixar que o orquestrador
+    // externo (EasyPanel/Docker) decida reiniciar via healthcheck se necessário.
+  });
+
   const env = loadEnv();
   const app = await NestFactory.create(AppModule);
 

@@ -43,7 +43,11 @@ export class FinanceiroService {
   async create(dto: CreateContaDto): Promise<Conta> {
     const tz = await this.repo.tenantTimezone();
     // Ancora `vencimento` date-only ao meio-dia local → não cai -1 dia no fuso (SPEC-011).
-    return this.repo.create({ ...dto, vencimento: ancorarDataOnly(dto.vencimento, tz) });
+    return this.repo.create({
+      ...dto,
+      vencimento: ancorarDataOnly(dto.vencimento, tz),
+      idempotencyKey: dto.idempotencyKey ?? null,
+    });
   }
 
   /**
@@ -67,6 +71,7 @@ export class FinanceiroService {
       status,
       origem: ContaOrigem.AVULSO,
       categoriaId: dto.categoriaId ?? null,
+      idempotencyKey: dto.idempotencyKey ?? null,
     });
   }
 
