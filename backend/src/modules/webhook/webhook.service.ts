@@ -13,12 +13,13 @@ import { fetchComTimeout } from '../../common/http/fetch-timeout.util';
  * Contexto (2026-06-25): por segurança, a entrada externa de webhooks passou a
  * ser a API (`api.evofit.tech`, porta única). Mas o cérebro vive no n8n, cujo
  * webhook NÃO é exposto por esse domínio — então o POST do Evolution caía no
- * backend e tomava 404 (Nina ficava muda). Esta ponte valida o token e repassa
- * o payload CRU pro webhook do n8n (server-to-server).
+ * backend e tomava 404 (Nina ficava muda). Esta ponte repassa o payload CRU pro
+ * webhook do n8n (server-to-server), preservando o `?token=` recebido.
  *
- * Não é tenant-scoped (infra) nem usa JWT: autentica pelo `?token=` contra
- * `NINA_WEBHOOK_TOKEN`. O n8n revalida o MESMO token no nó `Valida Segredo`
- * (defesa em duas camadas), por isso o token é repassado adiante na query.
+ * Segurança: o portão é o nó `Valida Segredo` do n8n (já validado E2E — forjado
+ * bloqueado, real passa). O backend repassa o token intacto. Opcionalmente, se
+ * `NINA_WEBHOOK_TOKEN` estiver setado, o backend já barra o token errado aqui
+ * (defesa em profundidade), sem nem tocar o n8n. Não é tenant-scoped nem JWT.
  */
 @Injectable()
 export class WebhookService {
@@ -29,25 +30,26 @@ export class WebhookService {
     payload: unknown,
     token: string | undefined,
   ): Promise<{ status: string }> {
-    const esperado = this.env.ninaWebhookToken;
-    // Sem token configurado = ponte desligada de propósito (nunca repassa aberto).
-    if (!esperado) {
-      this.logger.error('NINA_WEBHOOK_TOKEN ausente — ponte de webhook desabilitada.');
-      throw new ServiceUnavailableException('Ponte de webhook não configurada.');
+    const destino = this.env.ninaN8nWebhookUrl;
+    if (!destino) {
+      this.logger.error('NINA_N8N_WEBHOOK_URL vazio — sem destino de repasse.');
+      throw new ServiceUnavailableException('Destino do n8n não configurado.');
     }
-    if (token !== esperado) {
+
+    // Defesa em profundidade OPCIONAL: com NINA_WEBHOOK_TOKEN setado, barra o
+    // token errado aqui. Sem ele, o portão é o n8n (`Valida Segredo`).
+    const esperado = this.env.ninaWebhookToken;
+    if (esperado && token !== esperado) {
       // Não logamos o token recebido (evita vazar segredo em log).
       throw new UnauthorizedException('Token inválido.');
     }
 
-    const destino = this.env.ninaN8nWebhookUrl;
-    if (!destino) {
-      this.logger.error('NINA_N8N_WEBHOOK_URL ausente — sem destino de repasse.');
-      throw new ServiceUnavailableException('Destino do n8n não configurado.');
-    }
-
-    // Repassa o token na query (o n8n valida `query.token` no nó `Valida Segredo`).
-    const url = destino + (destino.includes('?') ? '&' : '?') + 'token=' + encodeURIComponent(esperado);
+    // Repassa o MESMO token recebido na query (o n8n valida `query.token`).
+    const url =
+      destino +
+      (destino.includes('?') ? '&' : '?') +
+      'token=' +
+      encodeURIComponent(token ?? '');
 
     let res: Response;
     try {

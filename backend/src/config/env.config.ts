@@ -63,9 +63,12 @@ export function loadEnv(): AppEnv {
     llmTimeoutMs: Number(process.env.LLM_TIMEOUT_MS) || 15000,
     ttsTimeoutMs: Number(process.env.TTS_TIMEOUT_MS) || 12000,
     // Ponte de webhook Evolution→n8n (2026-06-25): a entrada externa virou a API
-    // (porta única por segurança). Estas envs autenticam o POST do Evolution e
-    // dão o destino do repasse pro cérebro no n8n. Ausentes = ponte off (503).
+    // (porta única por segurança); o backend repassa pro webhook do n8n. A URL
+    // tem default (não é segredo); o token é defesa em profundidade OPCIONAL —
+    // o portão é o nó `Valida Segredo` do n8n. Ver webhook.service.ts.
     ninaWebhookToken: process.env.NINA_WEBHOOK_TOKEN ?? '',
-    ninaN8nWebhookUrl: process.env.NINA_N8N_WEBHOOK_URL ?? '',
+    ninaN8nWebhookUrl:
+      process.env.NINA_N8N_WEBHOOK_URL ??
+      'https://alicia-n8n.rte6ms.easypanel.host/webhook/nina',
   };
 }
