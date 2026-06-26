@@ -20,6 +20,8 @@ export interface AppEnv {
   elevenlabsModel: string;
   llmTimeoutMs: number;
   ttsTimeoutMs: number;
+  ninaWebhookToken: string;
+  ninaN8nWebhookUrl: string;
 }
 
 const REQUIRED = [
@@ -60,5 +62,13 @@ export function loadEnv(): AppEnv {
     // legítima do orb (gemini ~9s); ajustável por env sem redeploy de código.
     llmTimeoutMs: Number(process.env.LLM_TIMEOUT_MS) || 15000,
     ttsTimeoutMs: Number(process.env.TTS_TIMEOUT_MS) || 12000,
+    // Ponte de webhook Evolution→n8n (2026-06-25): a entrada externa virou a API
+    // (porta única por segurança); o backend repassa pro webhook do n8n. A URL
+    // tem default (não é segredo); o token é defesa em profundidade OPCIONAL —
+    // o portão é o nó `Valida Segredo` do n8n. Ver webhook.service.ts.
+    ninaWebhookToken: process.env.NINA_WEBHOOK_TOKEN ?? '',
+    ninaN8nWebhookUrl:
+      process.env.NINA_N8N_WEBHOOK_URL ??
+      'https://alicia-n8n.rte6ms.easypanel.host/webhook/nina',
   };
 }
